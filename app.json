@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "login-app",
-    "slug": "login-app",
+    "name": "LogIn",
+    "slug": "login-workforce",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "loginapp",
+    "scheme": "login",
     "userInterfaceStyle": "automatic",
     "ios": {
       "icon": "./assets/expo.icon"
@@ -25,6 +25,7 @@
     },
     "plugins": [
       "expo-router",
+      "expo-sqlite",
       [
         "expo-splash-screen",
         {

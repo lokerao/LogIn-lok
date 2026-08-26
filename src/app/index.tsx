@@ -1,98 +1,45 @@
-import * as Device from 'expo-device';
-import { Platform, StyleSheet } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { AnimatedIcon } from '@/components/animated-icon';
-import { HintRow } from '@/components/hint-row';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { WebBadge } from '@/components/web-badge';
-import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
-
-function getDevMenuHint() {
-  if (Platform.OS === 'web') {
-    return <ThemedText type="small">use browser devtools</ThemedText>;
-  }
-  if (Device.isDevice) {
-    return (
-      <ThemedText type="small">
-        shake device or press <ThemedText type="code">m</ThemedText> in terminal
-      </ThemedText>
-    );
-  }
-  const shortcut = Platform.OS === 'android' ? 'cmd+m (or ctrl+m)' : 'cmd+d';
-  return (
-    <ThemedText type="small">
-      press <ThemedText type="code">{shortcut}</ThemedText>
-    </ThemedText>
-  );
-}
+import { Button } from '@/components/ui/button';
+import { StatusIndicator } from '@/components/ui/status-indicator';
+import { colors, radius, spacing, typography } from '@/constants/design-system';
+import { isSupabaseConfigured } from '@/lib/supabase';
 
 export default function HomeScreen() {
   return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <ThemedView style={styles.heroSection}>
-          <AnimatedIcon />
-          <ThemedText type="title" style={styles.title}>
-            Welcome to&nbsp;Expo
-          </ThemedText>
-        </ThemedView>
-
-        <ThemedText type="code" style={styles.code}>
-          get started
-        </ThemedText>
-
-        <ThemedView type="backgroundElement" style={styles.stepContainer}>
-          <HintRow
-            title="Try editing"
-            hint={<ThemedText type="code">src/app/index.tsx</ThemedText>}
-          />
-          <HintRow title="Dev tools" hint={getDevMenuHint()} />
-          <HintRow
-            title="Fresh start"
-            hint={<ThemedText type="code">npm run reset-project</ThemedText>}
-          />
-        </ThemedView>
-
-        {Platform.OS === 'web' && <WebBadge />}
-      </SafeAreaView>
-    </ThemedView>
+    <SafeAreaView style={styles.screen}>
+      <View style={styles.content}>
+        <View style={styles.brand}>
+          <View style={styles.mark}><View style={styles.markInset} /></View>
+          <Text style={styles.brandText}>LogIn</Text>
+        </View>
+        <View style={styles.hero}>
+          <Text style={styles.eyebrow}>WORKPLACE, SIMPLIFIED</Text>
+          <Text style={styles.title}>A better start{'\n'}to work.</Text>
+          <Text style={styles.subtitle}>Your secure home for people, progress, and the work that connects them.</Text>
+        </View>
+        <View style={styles.footer}>
+          <StatusIndicator>{isSupabaseConfigured ? 'Secure connection configured' : 'Foundation ready'}</StatusIndicator>
+          <Button accessibilityLabel="LogIn foundation is being prepared">Coming soon</Button>
+          <Text style={styles.note}>Authentication will be enabled after the secure backend is connected.</Text>
+        </View>
+      </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    flexDirection: 'row',
-  },
-  safeArea: {
-    flex: 1,
-    paddingHorizontal: Spacing.four,
-    alignItems: 'center',
-    gap: Spacing.three,
-    paddingBottom: BottomTabInset + Spacing.three,
-    maxWidth: MaxContentWidth,
-  },
-  heroSection: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    flex: 1,
-    paddingHorizontal: Spacing.four,
-    gap: Spacing.four,
-  },
-  title: {
-    textAlign: 'center',
-  },
-  code: {
-    textTransform: 'uppercase',
-  },
-  stepContainer: {
-    gap: Spacing.three,
-    alignSelf: 'stretch',
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.four,
-    borderRadius: Spacing.four,
-  },
+  screen: { backgroundColor: colors.canvas, flex: 1 },
+  content: { flex: 1, justifyContent: 'space-between', padding: spacing.lg },
+  brand: { alignItems: 'center', flexDirection: 'row', gap: spacing.sm },
+  mark: { alignItems: 'center', backgroundColor: colors.primary, borderRadius: radius.sm, height: 32, justifyContent: 'center', transform: [{ rotate: '-8deg' }], width: 32 },
+  markInset: { borderColor: colors.white, borderRadius: 4, borderWidth: 3, height: 13, width: 13 },
+  brandText: { color: colors.ink, fontSize: 22, fontWeight: '800', letterSpacing: -0.7 },
+  hero: { marginTop: 'auto', paddingBottom: spacing.xxl },
+  eyebrow: { color: colors.primary, marginBottom: spacing.md, ...typography.eyebrow },
+  title: { color: colors.ink, marginBottom: spacing.md, ...typography.title },
+  subtitle: { color: colors.muted, maxWidth: 330, ...typography.subtitle },
+  footer: { gap: spacing.md },
+  note: { color: colors.muted, textAlign: 'center', ...typography.body },
 });
