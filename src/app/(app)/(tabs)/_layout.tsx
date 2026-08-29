@@ -1,0 +1,3 @@
+import { Tabs } from 'expo-router';
+import { colors } from '@/constants/design-system';
+export default function EmployeeTabs() { return <Tabs screenOptions={{ headerShown: false, tabBarActiveTintColor: colors.primary, tabBarInactiveTintColor: colors.muted, tabBarStyle: { backgroundColor: colors.white } }}><Tabs.Screen name="index" options={{ title: 'Home' }} /><Tabs.Screen name="profile" options={{ title: 'Profile' }} /><Tabs.Screen name="work" options={{ title: 'My Work' }} /><Tabs.Screen name="talent" options={{ title: 'Talent' }} /><Tabs.Screen name="more" options={{ title: 'More' }} /></Tabs>; }

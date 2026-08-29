@@ -1,0 +1,12 @@
+import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import { EmployeeScreen, EmptyModule, employeeStyles } from '@/components/employee-screen';
+import { colors, radius, spacing, typography } from '@/constants/design-system';
+import { useEmployee } from '@/features/employee/employee-provider';
+export default function EmployeeHome() {
+  const { employee, error, isLoading } = useEmployee();
+  if (isLoading) return <EmployeeScreen title="Home"><ActivityIndicator color={colors.primary} /></EmployeeScreen>;
+  if (error || !employee) return <EmployeeScreen title="Home"><EmptyModule title="Profile unavailable" message={error ?? 'Your employee profile is not available yet.'} /></EmployeeScreen>;
+  const name = employee.displayName ?? `${employee.firstName} ${employee.lastName}`;
+  return <EmployeeScreen title="Home"><View style={styles.hero}><View style={styles.avatar}><Text style={styles.avatarText}>{name.slice(0, 1).toUpperCase()}</Text></View><View><Text style={styles.welcome}>Welcome back,</Text><Text style={styles.name}>{name}</Text><Text style={styles.detail}>{employee.designation ?? 'Employee'} · {employee.employeeCode}</Text></View></View><View style={employeeStyles.card}><Text style={employeeStyles.label}>Today’s overview</Text><Text style={employeeStyles.muted}>Attendance and work updates will appear here when those modules are enabled.</Text></View><View style={employeeStyles.card}><Text style={employeeStyles.label}>My profile completion</Text><Text style={employeeStyles.body}>Keep your display name current. Employment details are managed securely by your organization.</Text></View><View style={employeeStyles.card}><Text style={employeeStyles.label}>Quick access</Text><Text style={employeeStyles.body}>Profile · My Work · Talent</Text></View><View style={employeeStyles.card}><Text style={employeeStyles.label}>Professional identity</Text><Text style={employeeStyles.muted}>Talent ID and approved professional information are pending the dedicated Talent module.</Text></View></EmployeeScreen>;
+}
+const styles = StyleSheet.create({ hero: { alignItems: 'center', flexDirection: 'row', gap: spacing.md }, avatar: { alignItems: 'center', backgroundColor: colors.primary, borderRadius: radius.pill, height: 58, justifyContent: 'center', width: 58 }, avatarText: { color: colors.white, fontSize: 24, fontWeight: '800' }, welcome: { color: colors.muted, ...typography.body }, name: { color: colors.ink, fontSize: 23, fontWeight: '800' }, detail: { color: colors.muted, fontSize: 14, marginTop: 2 } });
