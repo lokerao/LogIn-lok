@@ -1,19 +1,49 @@
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter } from "expo-router";
+import { useEffect, useMemo, useState } from "react";
+import {
+    ActivityIndicator,
+    Pressable,
+    StyleSheet,
+    Text,
+    View,
+} from "react-native";
 
 import {
-  EmployeeScreen,
-  EmptyModule,
-  employeeStyles,
-} from '@/components/employee-screen';
-import { colors, radius, spacing, typography } from '@/constants/design-system';
-import { useAuth } from '@/features/auth/auth-provider';
-import { useEmployee } from '@/features/employee/employee-provider';
+    EmployeeScreen,
+    EmptyModule,
+    employeeStyles,
+} from "@/components/employee-screen";
+import { colors, radius, spacing, typography } from "@/constants/design-system";
+import { useAuth } from "@/features/auth/auth-provider";
+import { useEmployee } from "@/features/employee/employee-provider";
+import { fetchMyAssignments } from "@/features/work/work-service";
+import type { WorkAssignment } from "@/types/work";
 
 export default function EmployeeHome() {
   const router = useRouter();
   const { identity } = useAuth();
   const { employee, error, isLoading } = useEmployee();
+  const [todayTasks, setTodayTasks] = useState<WorkAssignment[]>([]);
+
+  const roles = useMemo(() => identity?.roles ?? [], [identity?.roles]);
+  const isAttendanceEligible = roles.some((r) =>
+    ["employee", "manager", "hr"].includes(r),
+  );
+  const isWorkEligible = roles.some((r) =>
+    ["employee", "manager", "hr"].includes(r),
+  );
+  const isManager = roles.includes("manager");
+
+  useEffect(() => {
+    if (isWorkEligible && roles.includes("employee")) {
+      const timer = setTimeout(() => {
+        void fetchMyAssignments("today")
+          .then((tasks) => setTodayTasks(tasks.slice(0, 3)))
+          .catch(() => {});
+      }, 0);
+      return () => clearTimeout(timer);
+    }
+  }, [isWorkEligible, roles]);
 
   if (isLoading) {
     return (
@@ -27,7 +57,7 @@ export default function EmployeeHome() {
     return (
       <EmployeeScreen title="Home">
         <EmptyModule
-          message={error ?? 'Your employee profile is not available yet.'}
+          message={error ?? "Your employee profile is not available yet."}
           title="Profile unavailable"
         />
       </EmployeeScreen>
@@ -36,24 +66,73 @@ export default function EmployeeHome() {
 
   const name =
     employee.displayName ?? `${employee.firstName} ${employee.lastName}`;
-  const isAttendanceEligible = identity?.roles.some((r) =>
-    ['employee', 'manager', 'hr'].includes(r),
-  );
 
   return (
     <EmployeeScreen title="Home">
       <View style={styles.hero}>
         <View style={styles.avatar}>
-          <Text style={styles.avatarText}>{name.slice(0, 1).toUpperCase()}</Text>
+          <Text style={styles.avatarText}>
+            {name.slice(0, 1).toUpperCase()}
+          </Text>
         </View>
         <View>
           <Text style={styles.welcome}>Welcome back,</Text>
           <Text style={styles.name}>{name}</Text>
           <Text style={styles.detail}>
-            {employee.designation ?? 'Employee'} · {employee.employeeCode}
+            {employee.designation ?? "Employee"} · {employee.employeeCode}
           </Text>
         </View>
       </View>
+
+      {/* Today's Work Quick Access (Only for eligible roles) */}
+      {isWorkEligible && (
+        <View style={employeeStyles.card}>
+          <View style={styles.cardHeader}>
+            <Text style={employeeStyles.label}>Today&apos;s Work</Text>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => router.push("/(app)/(tabs)/work" as any)}
+              style={styles.actionBtn}
+            >
+              <Text style={styles.actionBtnText}>View All Work ↗</Text>
+            </Pressable>
+          </View>
+          {todayTasks.length === 0 ? (
+            <Text style={employeeStyles.muted}>
+              No daily assignments scheduled for today yet.
+            </Text>
+          ) : (
+            <View style={styles.taskList}>
+              {todayTasks.map((t) => (
+                <Pressable
+                  key={t.id}
+                  onPress={() => router.push("/(app)/(tabs)/work" as any)}
+                  style={styles.taskItem}
+                >
+                  <View style={styles.taskTitleRow}>
+                    <Text numberOfLines={1} style={styles.taskTitle}>
+                      {t.title}
+                    </Text>
+                    <Text style={styles.taskProgress}>
+                      {t.progress_percent}%
+                    </Text>
+                  </View>
+                  <Text style={styles.taskMeta}>
+                    {t.status === "completed"
+                      ? "Completed"
+                      : t.status === "in_progress"
+                        ? "In Progress"
+                        : t.status === "blocked"
+                          ? "Blocked"
+                          : "Assigned"}
+                    {t.due_time ? ` · Due ${t.due_time.slice(0, 5)}` : ""}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+          )}
+        </View>
+      )}
 
       {/* Attendance Quick Access (Only for eligible roles) */}
       {isAttendanceEligible && (
@@ -62,14 +141,35 @@ export default function EmployeeHome() {
             <Text style={employeeStyles.label}>Today&apos;s Attendance</Text>
             <Pressable
               accessibilityRole="button"
-              onPress={() => router.push('/attendance' as any)}
+              onPress={() => router.push("/attendance" as any)}
               style={styles.actionBtn}
             >
               <Text style={styles.actionBtnText}>Open Attendance ↗</Text>
             </Pressable>
           </View>
           <Text style={employeeStyles.body}>
-            Record your daily check-in and check-out with live camera photo verification.
+            Record your daily check-in and check-out with live camera photo
+            verification.
+          </Text>
+        </View>
+      )}
+
+      {/* My Team Quick Access (Only for Managers) */}
+      {isManager && (
+        <View style={employeeStyles.card}>
+          <View style={styles.cardHeader}>
+            <Text style={employeeStyles.label}>My Team</Text>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => router.push("/team" as any)}
+              style={styles.actionBtn}
+            >
+              <Text style={styles.actionBtnText}>Open Team Hub ↗</Text>
+            </Pressable>
+          </View>
+          <Text style={employeeStyles.body}>
+            Monitor your direct reports, today&apos;s shift attendance, leave
+            requests, and task assignments.
           </Text>
         </View>
       )}
@@ -78,21 +178,37 @@ export default function EmployeeHome() {
         <Text style={employeeStyles.label}>Quick Access</Text>
         <View style={styles.quickLinks}>
           <Pressable
-            onPress={() => router.push('/profile')}
+            onPress={() => router.push("/profile")}
             style={styles.quickLink}
           >
             <Text style={styles.quickLinkText}>Profile</Text>
           </Pressable>
+          {isManager && (
+            <Pressable
+              onPress={() => router.push("/team" as any)}
+              style={styles.quickLink}
+            >
+              <Text style={styles.quickLinkText}>My Team</Text>
+            </Pressable>
+          )}
+          {isWorkEligible && (
+            <Pressable
+              onPress={() => router.push("/(app)/(tabs)/work" as any)}
+              style={styles.quickLink}
+            >
+              <Text style={styles.quickLinkText}>My Work</Text>
+            </Pressable>
+          )}
           {isAttendanceEligible && (
             <Pressable
-              onPress={() => router.push('/attendance' as any)}
+              onPress={() => router.push("/attendance" as any)}
               style={styles.quickLink}
             >
               <Text style={styles.quickLinkText}>Attendance</Text>
             </Pressable>
           )}
           <Pressable
-            onPress={() => router.push('/talent')}
+            onPress={() => router.push("/talent")}
             style={styles.quickLink}
           >
             <Text style={styles.quickLinkText}>Talent ID</Text>
@@ -112,23 +228,23 @@ export default function EmployeeHome() {
 }
 
 const styles = StyleSheet.create({
-  hero: { alignItems: 'center', flexDirection: 'row', gap: spacing.md },
+  hero: { alignItems: "center", flexDirection: "row", gap: spacing.md },
   avatar: {
-    alignItems: 'center',
+    alignItems: "center",
     backgroundColor: colors.primary,
     borderRadius: radius.pill,
     height: 58,
-    justifyContent: 'center',
+    justifyContent: "center",
     width: 58,
   },
-  avatarText: { color: colors.white, fontSize: 24, fontWeight: '800' },
+  avatarText: { color: colors.white, fontSize: 24, fontWeight: "800" },
   welcome: { color: colors.muted, ...typography.body },
-  name: { color: colors.ink, fontSize: 23, fontWeight: '800' },
+  name: { color: colors.ink, fontSize: 23, fontWeight: "800" },
   detail: { color: colors.muted, fontSize: 14, marginTop: 2 },
   cardHeader: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "space-between",
   },
   actionBtn: {
     paddingVertical: 2,
@@ -136,11 +252,11 @@ const styles = StyleSheet.create({
   actionBtnText: {
     color: colors.primary,
     fontSize: 13,
-    fontWeight: '700',
+    fontWeight: "700",
   },
   quickLinks: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    flexWrap: "wrap",
     gap: spacing.sm,
     marginTop: spacing.xs,
   },
@@ -153,6 +269,38 @@ const styles = StyleSheet.create({
   quickLinkText: {
     color: colors.ink,
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: "600",
+  },
+  taskList: {
+    gap: spacing.xs,
+    marginTop: 4,
+  },
+  taskItem: {
+    backgroundColor: colors.canvas,
+    borderRadius: radius.sm,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs + 2,
+    gap: 2,
+  },
+  taskTitleRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  taskTitle: {
+    color: colors.ink,
+    fontSize: 14,
+    fontWeight: "700",
+    flex: 1,
+    marginRight: spacing.sm,
+  },
+  taskProgress: {
+    color: colors.primary,
+    fontSize: 12,
+    fontWeight: "700",
+  },
+  taskMeta: {
+    color: colors.muted,
+    fontSize: 12,
   },
 });

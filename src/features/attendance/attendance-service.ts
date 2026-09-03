@@ -1,12 +1,12 @@
-import { decode } from 'base64-arraybuffer';
-import * as Crypto from 'expo-crypto';
-import { File as ExpoFile, UploadType } from 'expo-file-system';
+import { decode } from "base64-arraybuffer";
+import * as Crypto from "expo-crypto";
+import { File as ExpoFile, UploadType } from "expo-file-system";
 
-import { getSupabase } from '@/lib/supabase';
+import { getSupabase } from "@/lib/supabase";
 import type {
-  AttendanceRecord,
-  AttendanceVerificationStatus,
-} from '@/types/attendance';
+    AttendanceRecord,
+    AttendanceVerificationStatus,
+} from "@/types/attendance";
 
 /**
  * Upload a local photo to Supabase Storage using expo-file-system's native
@@ -41,13 +41,13 @@ async function uploadPhotoToStorage(
   });
 
   if (!localFile.exists) {
-    throw new Error('Captured photo file does not exist on device.');
+    throw new Error("Captured photo file does not exist on device.");
   }
   if (localFile.size < 1000) {
     console.warn(
       `[AttendanceService] WARNING: ${label} file is suspiciously small:`,
       localFile.size,
-      'bytes',
+      "bytes",
     );
   }
 
@@ -55,26 +55,29 @@ async function uploadPhotoToStorage(
   const base64Head = localFile.base64Sync().substring(0, 12);
   const headBuffer = decode(base64Head);
   const header = new Uint8Array(headBuffer);
-  const isJpeg = header[0] === 0xFF && header[1] === 0xD8 && header[2] === 0xFF;
+  const isJpeg = header[0] === 0xff && header[1] === 0xd8 && header[2] === 0xff;
   console.log(`[AttendanceService] ${label} JPEG check:`, {
     firstBytes: `${header[0]?.toString(16)} ${header[1]?.toString(16)} ${header[2]?.toString(16)}`,
     isValidJpeg: isJpeg,
   });
   if (!isJpeg) {
-    console.warn(`[AttendanceService] WARNING: ${label} does not have JPEG magic bytes!`);
+    console.warn(
+      `[AttendanceService] WARNING: ${label} does not have JPEG magic bytes!`,
+    );
   }
 
   // STAGE 3: Get auth token for Storage API
   const { data: sessionData } = await supabase.auth.getSession();
   const accessToken = sessionData?.session?.access_token;
   if (!accessToken) {
-    throw new Error('No authenticated session — cannot upload photo.');
+    throw new Error("No authenticated session — cannot upload photo.");
   }
 
   // STAGE 4: Native upload to Supabase Storage REST API
   // POST /storage/v1/object/{bucket}/{path}
-  const supabaseUrl = (supabase as unknown as { storageUrl?: string }).storageUrl
-    ?? `${process.env.EXPO_PUBLIC_SUPABASE_URL}/storage/v1`;
+  const supabaseUrl =
+    (supabase as unknown as { storageUrl?: string }).storageUrl ??
+    `${process.env.EXPO_PUBLIC_SUPABASE_URL}/storage/v1`;
   const uploadUrl = `${supabaseUrl}/object/attendance/${storageObjectKey}`;
 
   console.log(`[AttendanceService] ${label} native upload starting:`, {
@@ -83,15 +86,15 @@ async function uploadPhotoToStorage(
   });
 
   const result = await localFile.upload(uploadUrl, {
-    httpMethod: 'POST',
+    httpMethod: "POST",
     uploadType: UploadType.BINARY_CONTENT,
     headers: {
       Authorization: `Bearer ${accessToken}`,
-      'Content-Type': 'image/jpeg',
-      'x-upsert': 'true',
-      apikey: process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? '',
+      "Content-Type": "image/jpeg",
+      "x-upsert": "true",
+      apikey: process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? "",
     },
-    mimeType: 'image/jpeg',
+    mimeType: "image/jpeg",
   });
 
   console.log(`[AttendanceService] ${label} native upload result:`, {
@@ -101,7 +104,7 @@ async function uploadPhotoToStorage(
 
   if (result.status < 200 || result.status >= 300) {
     throw new Error(
-      `Photo upload failed (HTTP ${result.status}): ${result.body ?? 'unknown error'}`,
+      `Photo upload failed (HTTP ${result.status}): ${result.body ?? "unknown error"}`,
     );
   }
 }
@@ -207,26 +210,26 @@ export async function submitCheckIn(
 
   try {
     // Upload photo via native HTTP (bypasses JS fetch entirely)
-    await uploadPhotoToStorage(photoUri, storageObjectKey, 'Check-in');
+    await uploadPhotoToStorage(photoUri, storageObjectKey, "Check-in");
 
     // Record check-in via RPC
     const { data: recordId, error: rpcError } = await supabase.rpc(
-      'record_attendance_check_in',
+      "record_attendance_check_in",
       { p_photo_path: dbPhotoPath },
     );
 
     if (rpcError) {
-      console.error('[AttendanceService] Check-in RPC error:', rpcError);
+      console.error("[AttendanceService] Check-in RPC error:", rpcError);
       await supabase.storage
-        .from('attendance')
+        .from("attendance")
         .remove([storageObjectKey])
         .catch(() => {});
-      throw new Error(rpcError.message || 'Could not record check-in.');
+      throw new Error(rpcError.message || "Could not record check-in.");
     }
 
     return (recordId as string) || attendanceId;
   } catch (err) {
-    console.error('[AttendanceService] submitCheckIn exception:', err);
+    console.error("[AttendanceService] submitCheckIn exception:", err);
     throw err;
   }
 }
@@ -241,57 +244,10 @@ export async function submitCheckOut(
   const dbPhotoPath = `attendance/${storageObjectKey}`;
 
   try {
-    // STAGE 1: Verify local file exists
-    const fileInfo = await FileSystem.getInfoAsync(photoUri);
-    console.log("[AttendanceService] Check-out local file info:", {
-      exists: fileInfo.exists,
-      uri: photoUri.substring(0, 80),
-      size: fileInfo.exists
-        ? (fileInfo as FileSystem.FileInfo & { size?: number }).size
-        : "N/A",
-    });
+    // Upload photo via native HTTP (bypasses JS fetch entirely)
+    await uploadPhotoToStorage(photoUri, storageObjectKey, "Check-out");
 
-    if (!fileInfo.exists) {
-      throw new Error("Captured photo file does not exist on device.");
-    }
-
-    // STAGE 2: Read actual bytes from filesystem via Base64
-    const { arrayBuffer, byteLength } =
-      await readLocalFileAsArrayBuffer(photoUri);
-
-    // STAGE 3: Verify JPEG magic bytes
-    const header = new Uint8Array(arrayBuffer, 0, Math.min(4, byteLength));
-    const isJpeg =
-      header[0] === 0xff && header[1] === 0xd8 && header[2] === 0xff;
-    console.log("[AttendanceService] Check-out binary payload:", {
-      storageObjectKey,
-      byteLength,
-      jpegMagic: `${header[0]?.toString(16)} ${header[1]?.toString(16)} ${header[2]?.toString(16)}`,
-      isValidJpeg: isJpeg,
-    });
-
-    // STAGE 4: Upload real binary to Supabase Storage
-    const { error: uploadError } = await supabase.storage
-      .from("attendance")
-      .upload(storageObjectKey, arrayBuffer, {
-        contentType: "image/jpeg",
-        upsert: true,
-      });
-
-    if (uploadError) {
-      console.error(
-        "[AttendanceService] Check-out storage upload error:",
-        uploadError,
-      );
-      throw new Error(`Photo upload failed: ${uploadError.message}`);
-    }
-
-    console.log("[AttendanceService] Check-out photo uploaded successfully:", {
-      storageObjectKey,
-      uploadedBytes: byteLength,
-    });
-
-    // STAGE 5: Call RPC to record check-out
+    // Call RPC to record check-out
     const { error: rpcError } = await supabase.rpc(
       "record_attendance_check_out",
       {

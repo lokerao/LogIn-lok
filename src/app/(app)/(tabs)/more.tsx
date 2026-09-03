@@ -59,6 +59,7 @@ export default function MoreScreen() {
     ["employee", "manager", "hr"].includes(r),
   );
   const isHR = identity?.roles.includes("hr");
+  const isManager = identity?.roles.includes("manager");
 
   return (
     <EmployeeScreen title="More">
@@ -94,6 +95,36 @@ export default function MoreScreen() {
             </View>
             <Text style={styles.navArrow}>›</Text>
           </Pressable>
+
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => router.push("/(app)/(tabs)/work" as any)}
+            style={styles.navRow}
+          >
+            <View>
+              <Text style={styles.navRowTitle}>Daily Work Assignments</Text>
+              <Text style={styles.navRowSubtitle}>
+                Today&apos;s tasks, progress updates, and team assignments
+              </Text>
+            </View>
+            <Text style={styles.navArrow}>›</Text>
+          </Pressable>
+
+          {isManager && (
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => router.push("/team" as any)}
+              style={styles.navRow}
+            >
+              <View>
+                <Text style={styles.navRowTitle}>My Team & Dashboard</Text>
+                <Text style={styles.navRowSubtitle}>
+                  Team overview, attendance, leaves, and direct reports
+                </Text>
+              </View>
+              <Text style={styles.navArrow}>›</Text>
+            </Pressable>
+          )}
 
           {isHR && (
             <Pressable

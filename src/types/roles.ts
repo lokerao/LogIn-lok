@@ -13,3 +13,13 @@ export const leaveEligibleRoles: readonly AppRole[] = [
   "manager",
   "hr",
 ];
+
+/** Daily work assignments are available to employees, managers, and HR (not admin, not recruiter). */
+export const workEligibleRoles: readonly AppRole[] = [
+  "employee",
+  "manager",
+  "hr",
+];
+
+/** Manager module is available strictly to managers (not admin, not recruiter). */
+export const managerEligibleRoles: readonly AppRole[] = ["manager"];
