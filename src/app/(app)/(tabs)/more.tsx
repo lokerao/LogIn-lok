@@ -1,3 +1,4 @@
+import { useRouter } from "expo-router";
 import { useState } from "react";
 import {
     ActivityIndicator,
@@ -14,6 +15,7 @@ import { useAuth } from "@/features/auth/auth-provider";
 import { useEmployee } from "@/features/employee/employee-provider";
 
 export default function MoreScreen() {
+  const router = useRouter();
   const { identity, signOut } = useAuth();
   const { employee } = useEmployee();
   const [isSigningOut, setIsSigningOut] = useState(false);
@@ -53,9 +55,66 @@ export default function MoreScreen() {
     "Employee";
 
   const email = employee?.workEmail ?? null;
+  const isAttendanceEligible = identity?.roles.some((r) =>
+    ["employee", "manager", "hr"].includes(r),
+  );
+  const isHR = identity?.roles.includes("hr");
 
   return (
     <EmployeeScreen title="More">
+      {/* Attendance Module (For Eligible Roles: Employee, Manager, HR) */}
+      {isAttendanceEligible && (
+        <View style={employeeStyles.card}>
+          <Text style={employeeStyles.label}>Workforce Modules</Text>
+
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => router.push("/attendance" as any)}
+            style={styles.navRow}
+          >
+            <View>
+              <Text style={styles.navRowTitle}>Attendance & Shift Clock</Text>
+              <Text style={styles.navRowSubtitle}>
+                Live camera check-in, check-out, and attendance history
+              </Text>
+            </View>
+            <Text style={styles.navArrow}>›</Text>
+          </Pressable>
+
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => router.push("/leave" as any)}
+            style={styles.navRow}
+          >
+            <View>
+              <Text style={styles.navRowTitle}>Leave</Text>
+              <Text style={styles.navRowSubtitle}>
+                Apply for leave, view balances, and track requests
+              </Text>
+            </View>
+            <Text style={styles.navArrow}>›</Text>
+          </Pressable>
+
+          {isHR && (
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => router.push("/attendance" as any)}
+              style={styles.navRow}
+            >
+              <View>
+                <Text style={styles.navRowTitle}>
+                  HR Attendance Verification
+                </Text>
+                <Text style={styles.navRowSubtitle}>
+                  Review and verify employee attendance photos
+                </Text>
+              </View>
+              <Text style={styles.navArrow}>›</Text>
+            </Pressable>
+          )}
+        </View>
+      )}
+
       {/* Account Section */}
       <View style={employeeStyles.card}>
         <Text style={employeeStyles.label}>Account</Text>
@@ -95,15 +154,6 @@ export default function MoreScreen() {
             <Text style={styles.logoutText}>Log out</Text>
           )}
         </Pressable>
-      </View>
-
-      {/* Upcoming Modules Card */}
-      <View style={employeeStyles.card}>
-        <Text style={employeeStyles.label}>Upcoming Modules</Text>
-        <Text style={employeeStyles.muted}>
-          Attendance & punch-in, leave management, work progress, and company
-          documents are scheduled for upcoming development phases.
-        </Text>
       </View>
     </EmployeeScreen>
   );
@@ -150,6 +200,29 @@ const styles = StyleSheet.create({
     backgroundColor: "#EEF1F6",
     height: 1,
     marginTop: spacing.sm,
+  },
+  navRow: {
+    alignItems: "center",
+    borderTopColor: "#EEF1F6",
+    borderTopWidth: 1,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    paddingVertical: spacing.sm,
+  },
+  navRowTitle: {
+    color: colors.ink,
+    fontSize: 15,
+    fontWeight: "700",
+  },
+  navRowSubtitle: {
+    color: colors.muted,
+    fontSize: 12,
+    marginTop: 2,
+  },
+  navArrow: {
+    color: colors.muted,
+    fontSize: 20,
+    fontWeight: "600",
   },
   logoutButton: {
     alignItems: "center",
