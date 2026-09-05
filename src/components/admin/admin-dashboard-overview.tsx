@@ -179,11 +179,11 @@ export function AdminDashboardOverview({
             <Text style={styles.roleSub}>Standard members</Text>
           </View>
           <View style={styles.roleCard}>
-            <Text style={styles.roleTitle}>Recruiters</Text>
+            <Text style={styles.roleTitle}>Talent Viewers</Text>
             <Text style={[styles.roleCount, { color: "#D97706" }]}>
-              {summary.roles_breakdown.recruiter}
+              {summary.roles_breakdown.talent_viewer ?? 0}
             </Text>
-            <Text style={styles.roleSub}>Talent viewer</Text>
+            <Text style={styles.roleSub}>External discovery</Text>
           </View>
         </View>
       </View>
@@ -273,7 +273,7 @@ export function AdminDashboardOverview({
               <Text style={styles.actionTitle}>Role & Access Control</Text>
               <Text style={styles.actionSubtitle}>
                 Assign or revoke system privileges (Employee, Manager, HR,
-                Admin, Recruiter)
+                Admin, Talent Viewer)
               </Text>
             </View>
             <Text style={styles.arrowText}>›</Text>

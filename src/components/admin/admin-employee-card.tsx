@@ -98,8 +98,8 @@ export function AdminEmployeeCard({
                     ? styles.roleHR
                     : role === "manager"
                       ? styles.roleManager
-                      : role === "recruiter"
-                        ? styles.roleRecruiter
+                      : role === "talent_viewer"
+                        ? styles.roleViewer
                         : styles.roleEmployee,
               ]}
             >
@@ -112,8 +112,8 @@ export function AdminEmployeeCard({
                       ? styles.roleHRText
                       : role === "manager"
                         ? styles.roleManagerText
-                        : role === "recruiter"
-                          ? styles.roleRecruiterText
+                        : role === "talent_viewer"
+                          ? styles.roleViewerText
                           : styles.roleEmployeeText,
                 ]}
               >
@@ -237,13 +237,13 @@ const styles = StyleSheet.create({
   roleHR: { backgroundColor: "#EFF6FF" },
   roleManager: { backgroundColor: "#ECFDF5" },
   roleEmployee: { backgroundColor: "#F8FAFC" },
-  roleRecruiter: { backgroundColor: "#FFFBEB" },
+  roleViewer: { backgroundColor: "#FFFBEB" },
   roleBadgeText: { fontSize: 9, fontWeight: "800" },
   roleAdminText: { color: "#6D28D9" },
   roleHRText: { color: "#1D4ED8" },
   roleManagerText: { color: "#047857" },
   roleEmployeeText: { color: "#475569" },
-  roleRecruiterText: { color: "#B45309" },
+  roleViewerText: { color: "#B45309" },
   actionBtn: {
     alignItems: "center",
     flexDirection: "row",

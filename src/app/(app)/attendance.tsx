@@ -28,6 +28,7 @@ import {
   submitCheckOut,
 } from "@/features/attendance/attendance-service";
 import { getSupabase } from "@/lib/supabase";
+import { isTalentViewer } from "@/types/roles";
 import type { AttendanceRecord } from "@/types/attendance";
 
 export default function AttendanceScreen() {
@@ -58,14 +59,10 @@ export default function AttendanceScreen() {
   const isHR = identity?.roles.includes("hr");
   const isManager = identity?.roles.includes("manager");
   const isAdmin = identity?.roles.includes("admin");
-  const isRecruiter =
-    identity?.roles.includes("recruiter") &&
-    !identity?.roles.includes("employee") &&
-    !identity?.roles.includes("hr") &&
-    !identity?.roles.includes("manager");
+  const isViewer = isTalentViewer(identity?.roles);
 
   // Check role restrictions
-  const isBlockedRole = isAdmin || isRecruiter;
+  const isBlockedRole = isAdmin || isViewer;
 
   const loadData = useCallback(
     async (isRefresh = false) => {

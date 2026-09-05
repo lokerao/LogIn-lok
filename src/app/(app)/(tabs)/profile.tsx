@@ -4,8 +4,10 @@ import {
     employeeStyles,
 } from "@/components/employee-screen";
 import { Button } from "@/components/ui/button";
-import { colors, spacing, typography } from "@/constants/design-system";
+import { colors, radius, spacing, typography } from "@/constants/design-system";
+import { useAuth } from "@/features/auth/auth-provider";
 import { useEmployee } from "@/features/employee/employee-provider";
+import { isTalentViewer } from "@/types/roles";
 import { useState } from "react";
 import {
     ActivityIndicator,
@@ -17,10 +19,95 @@ import {
 } from "react-native";
 
 export default function ProfileScreen() {
+  const { identity, session, signOut, isReady } = useAuth();
+  const isViewer = isTalentViewer(identity?.roles);
+  const isAuthLoading = !isReady || Boolean(session && !identity);
   const { employee, error, isLoading, updateDisplayName } = useEmployee();
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState("");
   const [saving, setSaving] = useState(false);
+  const [isSigningOut, setIsSigningOut] = useState(false);
+
+  async function handleSignOut() {
+    setIsSigningOut(true);
+    try {
+      await signOut();
+    } catch {
+      Alert.alert(
+        "Sign Out Error",
+        "Could not sign out of your account. Please try again.",
+      );
+      setIsSigningOut(false);
+    }
+  }
+
+  function confirmSignOut() {
+    Alert.alert(
+      "Log out?",
+      "You'll need to sign in again to access your account.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Log out",
+          style: "destructive",
+          onPress: () => void handleSignOut(),
+        },
+      ],
+    );
+  }
+
+  if (isAuthLoading) {
+    return (
+      <EmployeeScreen title="Profile">
+        <ActivityIndicator color={colors.primary} />
+      </EmployeeScreen>
+    );
+  }
+
+  if (isViewer) {
+    const displayName = identity?.displayName || "Talent Viewer";
+    const email = session?.user?.email ?? "Not provided";
+    return (
+      <EmployeeScreen title="Viewer Account">
+        <View style={employeeStyles.card}>
+          <Text style={employeeStyles.label}>Account Details</Text>
+          <View style={styles.viewerHeader}>
+            <View style={styles.viewerAvatar}>
+              <Text style={styles.viewerAvatarText}>
+                {displayName.charAt(0).toUpperCase()}
+              </Text>
+            </View>
+            <View style={{ flex: 1, gap: 2 }}>
+              <Text style={styles.name}>{displayName}</Text>
+              <Text style={styles.viewerEmail}>{email}</Text>
+              <View style={styles.viewerBadge}>
+                <Text style={styles.viewerBadgeText}>Talent Viewer</Text>
+              </View>
+            </View>
+          </View>
+        </View>
+
+        <View style={employeeStyles.card}>
+          <Text style={employeeStyles.label}>Network Access Privileges</Text>
+          <Text style={styles.viewerScopeText}>
+            • Discover participating organizations in the talent network.{"\n"}•
+            Request organization-specific access to view candidate profiles.
+            {"\n"}• Access approved professional summaries, verified skills, and
+            experience timelines.{"\n"}• Strictly read-only access. Internal
+            attendance, payroll, and workforce data are isolated.
+          </Text>
+        </View>
+
+        <View style={employeeStyles.card}>
+          <Text style={employeeStyles.label}>Account Session</Text>
+          <Button accessibilityLabel="Log out" onPress={confirmSignOut}>
+            {isSigningOut ? "Signing out…" : "Log out"}
+          </Button>
+        </View>
+      </EmployeeScreen>
+    );
+  }
+
   if (isLoading)
     return (
       <EmployeeScreen title="Profile">
@@ -169,5 +256,49 @@ const styles = StyleSheet.create({
     color: colors.ink,
     textTransform: "capitalize",
     ...typography.body,
+  },
+  viewerHeader: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: spacing.md,
+    marginTop: spacing.xs,
+  },
+  viewerAvatar: {
+    alignItems: "center",
+    backgroundColor: colors.primary,
+    borderRadius: radius.pill,
+    height: 52,
+    justifyContent: "center",
+    width: 52,
+  },
+  viewerAvatarText: {
+    color: colors.white,
+    fontSize: 20,
+    fontWeight: "700",
+  },
+  viewerEmail: {
+    color: colors.muted,
+    fontSize: 14,
+  },
+  viewerBadge: {
+    alignSelf: "flex-start",
+    backgroundColor: "#F0FDF4",
+    borderColor: "#BBF7D0",
+    borderRadius: radius.sm,
+    borderWidth: 1,
+    marginTop: 4,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 2,
+  },
+  viewerBadgeText: {
+    color: "#166534",
+    fontSize: 12,
+    fontWeight: "700",
+  },
+  viewerScopeText: {
+    color: colors.ink,
+    fontSize: 14,
+    lineHeight: 22,
+    marginTop: spacing.xs,
   },
 });

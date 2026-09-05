@@ -5,7 +5,7 @@ export interface AdminRoleBreakdown {
   hr: number;
   manager: number;
   employee: number;
-  recruiter: number;
+  talent_viewer?: number;
 }
 
 export interface AdminDashboardSummary {

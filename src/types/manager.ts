@@ -19,9 +19,7 @@ export interface ManagerDashboardSummary {
 }
 
 export type TodayAttendanceStatus =
-  | "checked_in"
-  | "checked_out"
-  | "not_clocked_in";
+  "checked_in" | "checked_out" | "not_clocked_in";
 
 export interface DirectReportSummary {
   id: string;

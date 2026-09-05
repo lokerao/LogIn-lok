@@ -51,9 +51,9 @@ const ALL_ROLES: {
     color: colors.ink,
   },
   {
-    key: "recruiter",
-    label: "Recruiter",
-    desc: "Talent viewer access for verified profiles",
+    key: "talent_viewer",
+    label: "Talent Viewer",
+    desc: "Cross-organization talent network discovery",
     color: "#D97706",
   },
 ];
@@ -334,8 +334,8 @@ export function AdminRolesView() {
                               ? styles.roleHR
                               : rk === "manager"
                                 ? styles.roleManager
-                                : rk === "recruiter"
-                                  ? styles.roleRecruiter
+                                : rk === "talent_viewer"
+                                  ? styles.roleViewer
                                   : styles.roleEmployee,
                         ]}
                       >
@@ -348,8 +348,8 @@ export function AdminRolesView() {
                                 ? styles.roleHRText
                                 : rk === "manager"
                                   ? styles.roleManagerText
-                                  : rk === "recruiter"
-                                    ? styles.roleRecruiterText
+                                  : rk === "talent_viewer"
+                                    ? styles.roleViewerText
                                     : styles.roleEmployeeText,
                           ]}
                         >
@@ -646,13 +646,13 @@ const styles = StyleSheet.create({
   roleHR: { backgroundColor: "#EFF6FF" },
   roleManager: { backgroundColor: "#ECFDF5" },
   roleEmployee: { backgroundColor: "#F8FAFC" },
-  roleRecruiter: { backgroundColor: "#FFFBEB" },
+  roleViewer: { backgroundColor: "#FFFBEB" },
   roleBadgeText: { fontSize: 9, fontWeight: "800" },
   roleAdminText: { color: "#6D28D9" },
   roleHRText: { color: "#1D4ED8" },
   roleManagerText: { color: "#047857" },
   roleEmployeeText: { color: "#475569" },
-  roleRecruiterText: { color: "#B45309" },
+  roleViewerText: { color: "#B45309" },
   modalOverlay: {
     backgroundColor: "rgba(15, 23, 42, 0.6)",
     flex: 1,

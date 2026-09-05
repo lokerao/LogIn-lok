@@ -1,11 +1,7 @@
 export type WorkAssignmentPriority = "low" | "medium" | "high" | "urgent";
 
 export type WorkAssignmentStatus =
-  | "assigned"
-  | "in_progress"
-  | "blocked"
-  | "completed"
-  | "cancelled";
+  "assigned" | "in_progress" | "blocked" | "completed" | "cancelled";
 
 export interface WorkAssignment {
   id: string;

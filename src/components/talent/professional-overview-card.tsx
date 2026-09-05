@@ -37,7 +37,7 @@ const visibilityOptions: {
   },
   {
     key: "recruiters",
-    label: "Recruiters",
+    label: "Talent Network",
     desc: "Visible to authorized talent viewers",
   },
 ];

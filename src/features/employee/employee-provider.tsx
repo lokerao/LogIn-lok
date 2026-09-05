@@ -10,6 +10,7 @@ import {
 
 import { useAuth } from "@/features/auth/auth-provider";
 import { getSupabase } from "@/lib/supabase";
+import { isTalentViewer } from "@/types/roles";
 
 export type EmployeeDetails = {
   displayName: string | null;
@@ -37,7 +38,8 @@ type EmployeeContextValue = {
 const EmployeeContext = createContext<EmployeeContextValue | null>(null);
 
 export function EmployeeProvider({ children }: PropsWithChildren) {
-  const { session } = useAuth();
+  const { session, identity } = useAuth();
+  const isViewer = isTalentViewer(identity?.roles);
   const [employee, setEmployee] = useState<EmployeeDetails | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -45,6 +47,15 @@ export function EmployeeProvider({ children }: PropsWithChildren) {
     if (!session) {
       setEmployee(null);
       setIsLoading(false);
+      return;
+    }
+    if (!identity) {
+      return;
+    }
+    if (isViewer) {
+      setEmployee(null);
+      setIsLoading(false);
+      setError(null);
       return;
     }
     setIsLoading(true);
@@ -90,7 +101,7 @@ export function EmployeeProvider({ children }: PropsWithChildren) {
       });
     }
     setIsLoading(false);
-  }, [session]);
+  }, [session, identity, isViewer]);
   useEffect(() => {
     const timer = setTimeout(() => void refresh(), 0);
     return () => clearTimeout(timer);

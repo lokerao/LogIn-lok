@@ -25,6 +25,7 @@ import {
     fetchMyLeaveRequests,
 } from "@/features/leave/leave-service";
 import type { LeaveBalance, LeaveRequest } from "@/types/leave";
+import { isTalentViewer } from "@/types/roles";
 
 export default function LeaveScreen() {
   const router = useRouter();
@@ -39,10 +40,11 @@ export default function LeaveScreen() {
   const [applyVisible, setApplyVisible] = useState(false);
 
   const roles = identity?.roles ?? [];
+  const isViewer = isTalentViewer(roles);
   const isEmployee = roles.includes("employee");
   const isManager = roles.includes("manager");
   const isHR = roles.includes("hr");
-  const isLeaveEligible = isEmployee || isManager || isHR;
+  const isLeaveEligible = !isViewer && (isEmployee || isManager || isHR);
 
   const loadEmployeeData = useCallback(
     async (isRefresh = false) => {
@@ -84,7 +86,7 @@ export default function LeaveScreen() {
     void loadEmployeeData();
   }
 
-  // Recruiter / unauthorized roles: block access entirely
+  // Unauthorized roles: block access entirely
   if (!isLeaveEligible) {
     return (
       <SafeAreaView style={styles.safe}>

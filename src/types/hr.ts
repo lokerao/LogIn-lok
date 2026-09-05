@@ -1,21 +1,13 @@
 export type PermanentEmploymentStatus = "active" | "inactive" | "terminated";
 export type DailyAttendanceStatus =
-  | "checked_in"
-  | "checked_out"
-  | "not_checked_in";
+  "checked_in" | "checked_out" | "not_checked_in";
 export type DailyLeaveStatus = "on_leave" | "none";
 
 export type CurrentWorkforceStatus =
-  | "active"
-  | "on_leave"
-  | "inactive"
-  | "terminated";
+  "active" | "on_leave" | "inactive" | "terminated";
 
 export type EmploymentStatus =
-  | "active"
-  | "on_leave"
-  | "inactive"
-  | "terminated";
+  "active" | "on_leave" | "inactive" | "terminated";
 export type EmploymentType = "full_time" | "part_time" | "contract" | "intern";
 export type TodayShiftStatus = DailyAttendanceStatus | "not_clocked_in";
 

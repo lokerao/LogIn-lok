@@ -1,37 +1,42 @@
 import { useRouter } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import {
-    ActivityIndicator,
-    Pressable,
-    StyleSheet,
-    Text,
-    View,
+  ActivityIndicator,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
 } from "react-native";
 
 import {
-    EmployeeScreen,
-    EmptyModule,
-    employeeStyles,
+  EmployeeScreen,
+  EmptyModule,
+  employeeStyles,
 } from "@/components/employee-screen";
+import { TalentViewerDashboard } from "@/components/talent-network/talent-viewer-dashboard";
 import { colors, radius, spacing, typography } from "@/constants/design-system";
 import { useAuth } from "@/features/auth/auth-provider";
 import { useEmployee } from "@/features/employee/employee-provider";
 import { fetchMyAssignments } from "@/features/work/work-service";
+import { isTalentViewer } from "@/types/roles";
 import type { WorkAssignment } from "@/types/work";
 
 export default function EmployeeHome() {
   const router = useRouter();
-  const { identity } = useAuth();
+  const { identity, session, isReady } = useAuth();
   const { employee, error, isLoading } = useEmployee();
   const [todayTasks, setTodayTasks] = useState<WorkAssignment[]>([]);
 
   const roles = useMemo(() => identity?.roles ?? [], [identity?.roles]);
+  const isViewer = isTalentViewer(roles);
+  const isAuthLoading = !isReady || Boolean(session && !identity);
   const isAdmin = roles.includes("admin");
   const isAttendanceEligible =
-    !isAdmin && roles.some((r) => ["employee", "manager", "hr"].includes(r));
-  const isWorkEligible = roles.some((r) =>
-    ["employee", "manager", "hr"].includes(r),
-  );
+    !isAdmin &&
+    !isViewer &&
+    roles.some((r) => ["employee", "manager", "hr"].includes(r));
+  const isWorkEligible =
+    !isViewer && roles.some((r) => ["employee", "manager", "hr"].includes(r));
   const isManager = roles.includes("manager");
   const isHR = roles.includes("hr");
 
@@ -45,6 +50,18 @@ export default function EmployeeHome() {
       return () => clearTimeout(timer);
     }
   }, [isWorkEligible, roles]);
+
+  if (isAuthLoading) {
+    return (
+      <EmployeeScreen title="Home">
+        <ActivityIndicator color={colors.primary} />
+      </EmployeeScreen>
+    );
+  }
+
+  if (isViewer) {
+    return <TalentViewerDashboard />;
+  }
 
   if (isLoading) {
     return (

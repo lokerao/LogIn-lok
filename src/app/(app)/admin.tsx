@@ -22,6 +22,7 @@ import { AdminOrgStructureView } from "@/components/admin/admin-org-structure-vi
 import { AdminRolesView } from "@/components/admin/admin-roles-view";
 import { AdminTeamsView } from "@/components/admin/admin-teams-view";
 import { EmptyModule } from "@/components/employee-screen";
+import { TalentViewerRequestsReviewModal } from "@/components/talent-network/talent-viewer-requests-review-modal";
 import { colors, radius, spacing } from "@/constants/design-system";
 import {
   fetchAdminDashboardSummary,
@@ -70,6 +71,7 @@ export default function AdminScreen() {
     null,
   );
   const [editModalVisible, setEditModalVisible] = useState(false);
+  const [viewerRequestsVisible, setViewerRequestsVisible] = useState(false);
 
   const roles = identity?.roles ?? [];
   const isAdmin = roles.includes("admin");
@@ -114,6 +116,16 @@ export default function AdminScreen() {
   // Client-side employee filtering
   const filteredEmployees = useMemo(() => {
     return employees.filter((emp) => {
+      // Exclude external Talent Viewers and legacy test accounts
+      if (
+        emp.roles?.includes("talent_viewer") ||
+        (emp.first_name === "Talent" && emp.last_name === "Viewer") ||
+        (emp.first_name?.toLowerCase() === "test" &&
+          emp.last_name?.toLowerCase() === "recruiter")
+      ) {
+        return false;
+      }
+
       // 1. Employment status filter
       if (
         employmentFilter !== "all" &&
@@ -208,6 +220,13 @@ export default function AdminScreen() {
             {summary?.organization_name ?? "Organization"} · Governance Hub
           </Text>
         </View>
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => setViewerRequestsVisible(true)}
+          style={styles.headerViewerBtn}
+        >
+          <Text style={styles.headerViewerBtnText}>Viewer Access</Text>
+        </Pressable>
       </View>
 
       {/* Main Tabs Navigation */}
@@ -380,7 +399,7 @@ export default function AdminScreen() {
                         { id: "hr", label: "HR" },
                         { id: "manager", label: "Manager" },
                         { id: "employee", label: "Employee" },
-                        { id: "recruiter", label: "Recruiter" },
+                        { id: "talent_viewer", label: "Talent Viewer" },
                       ] as const
                     ).map((item) => {
                       const isSelected = roleFilter === item.id;
@@ -546,6 +565,12 @@ export default function AdminScreen() {
         onSaved={() => loadData()}
         visible={editModalVisible}
       />
+
+      {/* External Talent Viewer Requests Review Modal */}
+      <TalentViewerRequestsReviewModal
+        onClose={() => setViewerRequestsVisible(false)}
+        visible={viewerRequestsVisible}
+      />
     </SafeAreaView>
   );
 }
@@ -554,6 +579,19 @@ const styles = StyleSheet.create({
   safeArea: {
     backgroundColor: colors.canvas,
     flex: 1,
+  },
+  headerViewerBtn: {
+    alignItems: "center",
+    backgroundColor: colors.primary,
+    borderRadius: radius.sm,
+    justifyContent: "center",
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 6,
+  },
+  headerViewerBtnText: {
+    color: colors.white,
+    fontSize: 12,
+    fontWeight: "700",
   },
   topNav: {
     alignItems: "center",

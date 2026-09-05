@@ -1,10 +1,7 @@
 export type TalentVisibility = "private" | "organization" | "recruiters";
 export type ReviewStatus = "pending" | "approved" | "rejected";
 export type ProficiencyLevel =
-  | "beginner"
-  | "intermediate"
-  | "advanced"
-  | "expert";
+  "beginner" | "intermediate" | "advanced" | "expert";
 
 export type TalentProfile = {
   employee_id: string;

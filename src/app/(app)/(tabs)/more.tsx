@@ -3,22 +3,36 @@ import { useState } from "react";
 import {
     ActivityIndicator,
     Alert,
+    Modal,
     Pressable,
     StyleSheet,
     Text,
     View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
-import { EmployeeScreen, employeeStyles } from "@/components/employee-screen";
+import {
+    EmployeeScreen,
+    EmptyModule,
+    employeeStyles,
+} from "@/components/employee-screen";
+import { TalentNetworkMyAccessView } from "@/components/talent-network/talent-network-my-access-view";
+import { TalentNetworkOrganizationsView } from "@/components/talent-network/talent-network-organizations-view";
 import { colors, radius, spacing } from "@/constants/design-system";
 import { useAuth } from "@/features/auth/auth-provider";
 import { useEmployee } from "@/features/employee/employee-provider";
+import { isTalentViewer } from "@/types/roles";
 
 export default function MoreScreen() {
   const router = useRouter();
-  const { identity, signOut } = useAuth();
+  const { identity, session, signOut, isReady } = useAuth();
   const { employee } = useEmployee();
   const [isSigningOut, setIsSigningOut] = useState(false);
+  const [showOrgsModal, setShowOrgsModal] = useState(false);
+  const [showAccessModal, setShowAccessModal] = useState(false);
+
+  const isViewer = isTalentViewer(identity?.roles);
+  const isAuthLoading = !isReady || Boolean(session && !identity);
 
   async function handleSignOut() {
     setIsSigningOut(true);
@@ -55,15 +69,35 @@ export default function MoreScreen() {
     canonicalName ||
     employee?.displayName ||
     identity?.displayName ||
-    "Employee";
+    (isViewer ? "Talent Viewer" : "Employee");
 
-  const email = employee?.workEmail ?? null;
-  const isAdmin = identity?.roles.includes("admin");
+  const email = employee?.workEmail ?? session?.user?.email ?? null;
+  const isAdmin = !isViewer && identity?.roles.includes("admin");
   const isAttendanceEligible =
+    !isViewer &&
     !isAdmin &&
     identity?.roles.some((r) => ["employee", "manager", "hr"].includes(r));
-  const isHR = identity?.roles.includes("hr");
-  const isManager = identity?.roles.includes("manager");
+  const isHR = !isViewer && identity?.roles.includes("hr");
+  const isManager = !isViewer && identity?.roles.includes("manager");
+
+  if (isAuthLoading) {
+    return (
+      <EmployeeScreen title="More">
+        <ActivityIndicator color={colors.primary} />
+      </EmployeeScreen>
+    );
+  }
+
+  if (isViewer) {
+    return (
+      <EmployeeScreen title="More">
+        <EmptyModule
+          message="Additional workforce modules are not available for Talent Viewers."
+          title="Access Restricted"
+        />
+      </EmployeeScreen>
+    );
+  }
 
   return (
     <EmployeeScreen title="More">
@@ -188,6 +222,84 @@ export default function MoreScreen() {
         </View>
       )}
 
+      {/* Talent Network Module (For Talent Viewer) */}
+      {isViewer && (
+        <>
+          <View style={employeeStyles.card}>
+            <Text style={employeeStyles.label}>Talent Network</Text>
+
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => router.push("/(app)/(tabs)" as any)}
+              style={styles.navRow}
+            >
+              <View>
+                <Text style={styles.navRowTitle}>Talent Network Overview</Text>
+                <Text style={styles.navRowSubtitle}>
+                  Dashboard, metrics, and quick network access
+                </Text>
+              </View>
+              <Text style={styles.navArrow}>›</Text>
+            </Pressable>
+
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => router.push("/(app)/(tabs)/talent" as any)}
+              style={styles.navRow}
+            >
+              <View>
+                <Text style={styles.navRowTitle}>Discover Talent Profiles</Text>
+                <Text style={styles.navRowSubtitle}>
+                  Search candidates by skills, headline, and approved portfolios
+                </Text>
+              </View>
+              <Text style={styles.navArrow}>›</Text>
+            </Pressable>
+
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => setShowOrgsModal(true)}
+              style={styles.navRow}
+            >
+              <View>
+                <Text style={styles.navRowTitle}>
+                  Participating Organizations
+                </Text>
+                <Text style={styles.navRowSubtitle}>
+                  Browse organizations and request access
+                </Text>
+              </View>
+              <Text style={styles.navArrow}>›</Text>
+            </Pressable>
+
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => setShowAccessModal(true)}
+              style={styles.navRow}
+            >
+              <View>
+                <Text style={styles.navRowTitle}>My Access Requests</Text>
+                <Text style={styles.navRowSubtitle}>
+                  Track pending, approved, and rejected access requests
+                </Text>
+              </View>
+              <Text style={styles.navArrow}>›</Text>
+            </Pressable>
+          </View>
+
+          <View style={employeeStyles.card}>
+            <Text style={employeeStyles.label}>Privacy & Compliance</Text>
+            <Text style={styles.complianceText}>
+              • You are browsing verified candidate profiles in read-only mode.
+              {"\n"}• Candidate profiles are visible only after explicit
+              organization approval.{"\n"}• Internal organization data,
+              attendance, leave, and compensation are strictly protected and
+              isolated.
+            </Text>
+          </View>
+        </>
+      )}
+
       {/* Account Section */}
       <View style={employeeStyles.card}>
         <Text style={employeeStyles.label}>Account</Text>
@@ -205,6 +317,9 @@ export default function MoreScreen() {
               <Text style={styles.userMeta}>
                 Employee ID: {employee?.employeeCode}
               </Text>
+            )}
+            {isViewer && (
+              <Text style={styles.userMeta}>Role: External Talent Viewer</Text>
             )}
           </View>
         </View>
@@ -228,6 +343,51 @@ export default function MoreScreen() {
           )}
         </Pressable>
       </View>
+
+      {/* Modals for Talent Viewer */}
+      {isViewer && (
+        <>
+          <Modal
+            animationType="slide"
+            onRequestClose={() => setShowOrgsModal(false)}
+            visible={showOrgsModal}
+          >
+            <SafeAreaView style={styles.modalSafe}>
+              <View style={styles.modalHeader}>
+                <Pressable
+                  onPress={() => setShowOrgsModal(false)}
+                  style={styles.modalCloseBtn}
+                >
+                  <Text style={styles.modalCloseText}>✕ Close</Text>
+                </Pressable>
+                <Text style={styles.modalHeaderTitle}>Organizations</Text>
+                <View style={{ width: 60 }} />
+              </View>
+              <TalentNetworkOrganizationsView />
+            </SafeAreaView>
+          </Modal>
+
+          <Modal
+            animationType="slide"
+            onRequestClose={() => setShowAccessModal(false)}
+            visible={showAccessModal}
+          >
+            <SafeAreaView style={styles.modalSafe}>
+              <View style={styles.modalHeader}>
+                <Pressable
+                  onPress={() => setShowAccessModal(false)}
+                  style={styles.modalCloseBtn}
+                >
+                  <Text style={styles.modalCloseText}>✕ Close</Text>
+                </Pressable>
+                <Text style={styles.modalHeaderTitle}>My Access Requests</Text>
+                <View style={{ width: 60 }} />
+              </View>
+              <TalentNetworkMyAccessView />
+            </SafeAreaView>
+          </Modal>
+        </>
+      )}
     </EmployeeScreen>
   );
 }
@@ -312,5 +472,38 @@ const styles = StyleSheet.create({
     color: "#B42318",
     fontSize: 15,
     fontWeight: "700",
+  },
+  complianceText: {
+    color: colors.muted,
+    fontSize: 13,
+    lineHeight: 20,
+    marginTop: spacing.xs,
+  },
+  modalSafe: {
+    backgroundColor: colors.canvas,
+    flex: 1,
+  },
+  modalHeader: {
+    alignItems: "center",
+    backgroundColor: colors.white,
+    borderBottomColor: "#EEF1F6",
+    borderBottomWidth: 1,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+  },
+  modalHeaderTitle: {
+    color: colors.ink,
+    fontSize: 16,
+    fontWeight: "700",
+  },
+  modalCloseBtn: {
+    paddingVertical: spacing.xs,
+  },
+  modalCloseText: {
+    color: colors.primary,
+    fontSize: 15,
+    fontWeight: "600",
   },
 });

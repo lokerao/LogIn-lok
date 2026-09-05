@@ -2,14 +2,14 @@ import { StyleSheet, Text, View } from "react-native";
 
 import { employeeStyles } from "@/components/employee-screen";
 import {
-    StatusIndicator,
-    type StatusVariant,
+  StatusIndicator,
+  type StatusVariant,
 } from "@/components/ui/status-indicator";
 import { colors, radius, spacing, typography } from "@/constants/design-system";
 import type {
-    ReviewStatus,
-    TalentProfile,
-    TalentVisibility,
+  ReviewStatus,
+  TalentProfile,
+  TalentVisibility,
 } from "@/types/talent";
 
 type Props = {
@@ -21,7 +21,7 @@ export function formatVisibility(visibility: TalentVisibility): string {
     case "organization":
       return "Organization";
     case "recruiters":
-      return "Recruiters & Talent Viewers";
+      return "Talent Network";
     case "private":
     default:
       return "Private (Only you)";
@@ -36,7 +36,7 @@ export function getReviewStatusInfo(status: ReviewStatus): {
     case "approved":
       return { label: "Approved", variant: "approved" };
     case "rejected":
-      return { label: "Rejected", variant: "rejected" };
+      return { label: "Needs Revision", variant: "rejected" };
     case "pending":
     default:
       return { label: "Pending Review", variant: "pending" };

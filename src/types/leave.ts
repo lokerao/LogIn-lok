@@ -1,8 +1,5 @@
 export type LeaveRequestStatus =
-  | "pending"
-  | "approved"
-  | "rejected"
-  | "cancelled";
+  "pending" | "approved" | "rejected" | "cancelled";
 
 export type LeaveType = {
   id: string;

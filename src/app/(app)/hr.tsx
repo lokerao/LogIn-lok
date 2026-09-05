@@ -1,14 +1,14 @@
 import { useRouter } from "expo-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
-    ActivityIndicator,
-    Pressable,
-    RefreshControl,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    View,
+  ActivityIndicator,
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -18,19 +18,20 @@ import { HREmployeeCard } from "@/components/hr/hr-employee-card";
 import { HREmployeeDetailsModal } from "@/components/hr/hr-employee-details-modal";
 import { HROrgStructureView } from "@/components/hr/hr-org-structure-view";
 import { HRTalentReviewModal } from "@/components/hr/hr-talent-review-modal";
+import { TalentViewerRequestsReviewModal } from "@/components/talent-network/talent-viewer-requests-review-modal";
 import { colors, radius, spacing } from "@/constants/design-system";
 import { useAuth } from "@/features/auth/auth-provider";
 import {
-    fetchHRDashboardSummary,
-    fetchHREmployeeDirectory,
-    fetchHROrganizationStructure,
-    fetchHRPendingTalentReviews,
+  fetchHRDashboardSummary,
+  fetchHREmployeeDirectory,
+  fetchHROrganizationStructure,
+  fetchHRPendingTalentReviews,
 } from "@/features/hr/hr-service";
 import type {
-    HRDashboardSummary,
-    HRDepartmentStructure,
-    HREmployeeListItem,
-    HRPendingTalentReview,
+  HRDashboardSummary,
+  HRDepartmentStructure,
+  HREmployeeListItem,
+  HRPendingTalentReview,
 } from "@/types/hr";
 
 type HRTab = "dashboard" | "directory" | "org_structure" | "talent_queue";
@@ -51,6 +52,9 @@ export default function HRScreen() {
   const [talentReviews, setTalentReviews] = useState<HRPendingTalentReview[]>(
     [],
   );
+
+  // External Talent Viewer Access Requests
+  const [viewerRequestsVisible, setViewerRequestsVisible] = useState(false);
 
   // Directory filter & search
   const [searchQuery, setSearchQuery] = useState("");
@@ -73,10 +77,9 @@ export default function HRScreen() {
   const roles = identity?.roles ?? [];
   const isHR = roles.includes("hr");
   const isAdmin = roles.includes("admin") && !isHR;
-  const isRecruiter = roles.includes("recruiter") && !isHR;
 
   // Authorization check
-  const isAuthorizedHR = Boolean(session && isHR && !isAdmin && !isRecruiter);
+  const isAuthorizedHR = Boolean(session && isHR && !isAdmin);
 
   const loadAllHRData = useCallback(
     async (isRefresh = false) => {
@@ -114,6 +117,15 @@ export default function HRScreen() {
   // Client-side canonical filtering: perfectly orthogonal & zero-latency
   const filteredDirectory = useMemo(() => {
     return directory.filter((emp) => {
+      // Exclude external Talent Viewers and legacy test accounts
+      if (
+        (emp.first_name === "Talent" && emp.last_name === "Viewer") ||
+        (emp.first_name?.toLowerCase() === "test" &&
+          emp.last_name?.toLowerCase() === "recruiter")
+      ) {
+        return false;
+      }
+
       // 1. Permanent Employment Status filter (HR lifecycle)
       if (
         employmentFilter !== "all" &&
@@ -216,6 +228,13 @@ export default function HRScreen() {
           <Text style={styles.pageTitle}>HR & Organization Hub</Text>
           <Text style={styles.pageSubtitle}>Workforce Administration</Text>
         </View>
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => setViewerRequestsVisible(true)}
+          style={styles.headerViewerBtn}
+        >
+          <Text style={styles.headerViewerBtnText}>Viewer Access</Text>
+        </Pressable>
       </View>
 
       {/* Segmented Navigation Tabs */}
@@ -468,6 +487,26 @@ export default function HRScreen() {
           {/* TAB 4: TALENT REVIEW QUEUE */}
           {activeTab === "talent_queue" && (
             <View style={styles.tabBody}>
+              {/* External Viewer Access Card */}
+              <View style={styles.viewerAccessCard}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.viewerAccessTitle}>
+                    External Talent Network
+                  </Text>
+                  <Text style={styles.viewerAccessSub}>
+                    Review organization access requests from external Talent
+                    Viewers
+                  </Text>
+                </View>
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() => setViewerRequestsVisible(true)}
+                  style={styles.viewerAccessBtn}
+                >
+                  <Text style={styles.viewerAccessBtnText}>Manage</Text>
+                </Pressable>
+              </View>
+
               <View style={styles.queueHeader}>
                 <Text style={styles.queueTitle}>
                   Pending Talent Profile Reviews
@@ -567,6 +606,12 @@ export default function HRScreen() {
         review={selectedTalentReview}
         visible={talentModalVisible}
       />
+
+      {/* External Talent Viewer Requests Review Modal */}
+      <TalentViewerRequestsReviewModal
+        onClose={() => setViewerRequestsVisible(false)}
+        visible={viewerRequestsVisible}
+      />
     </SafeAreaView>
   );
 }
@@ -575,6 +620,54 @@ const styles = StyleSheet.create({
   safeArea: {
     backgroundColor: colors.canvas,
     flex: 1,
+  },
+  headerViewerBtn: {
+    alignItems: "center",
+    backgroundColor: colors.primary,
+    borderRadius: radius.sm,
+    justifyContent: "center",
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 6,
+  },
+  headerViewerBtnText: {
+    color: colors.white,
+    fontSize: 12,
+    fontWeight: "700",
+  },
+  viewerAccessCard: {
+    alignItems: "center",
+    backgroundColor: colors.white,
+    borderColor: "#E2E8F0",
+    borderRadius: radius.md,
+    borderWidth: 1,
+    flexDirection: "row",
+    gap: spacing.md,
+    justifyContent: "space-between",
+    marginBottom: spacing.md,
+    padding: spacing.md,
+  },
+  viewerAccessTitle: {
+    color: colors.ink,
+    fontSize: 14,
+    fontWeight: "700",
+  },
+  viewerAccessSub: {
+    color: colors.muted,
+    fontSize: 12,
+    marginTop: 2,
+  },
+  viewerAccessBtn: {
+    alignItems: "center",
+    backgroundColor: colors.primary,
+    borderRadius: radius.sm,
+    justifyContent: "center",
+    paddingHorizontal: spacing.md,
+    paddingVertical: 8,
+  },
+  viewerAccessBtnText: {
+    color: colors.white,
+    fontSize: 13,
+    fontWeight: "700",
   },
   topNav: {
     alignItems: "center",

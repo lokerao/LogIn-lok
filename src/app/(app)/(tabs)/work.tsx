@@ -6,6 +6,7 @@ import { WorkAssignmentCard } from "@/components/work/work-assignment-card";
 import { colors, radius, spacing } from "@/constants/design-system";
 import { useAuth } from "@/features/auth/auth-provider";
 import { fetchMyAssignments } from "@/features/work/work-service";
+import { isTalentViewer } from "@/types/roles";
 import type { WorkAssignment, WorkSegment } from "@/types/work";
 import { useCallback, useEffect, useState } from "react";
 import {
@@ -19,14 +20,18 @@ import {
 } from "react-native";
 
 export default function WorkScreen() {
-  const { identity } = useAuth();
+  const { identity, session, isReady } = useAuth();
   const roles = identity?.roles ?? [];
 
+  const isViewer = isTalentViewer(roles);
+  const isAuthLoading = !isReady || Boolean(session && !identity);
   const isEmployee = roles.includes("employee");
   const isManager = roles.includes("manager");
   const isHR = roles.includes("hr");
-  const isAdminOrRecruiterOnly =
-    roles.length > 0 && roles.every((r) => r === "admin" || r === "recruiter");
+  const isRestricted =
+    isViewer ||
+    (roles.length > 0 &&
+      roles.every((r) => r === "admin" || r === "talent_viewer"));
 
   // Top navigation view mode: 'my_work' | 'team_work' | 'hr_work'
   const [viewMode, setViewMode] = useState<"my_work" | "team_work" | "hr_work">(
@@ -72,8 +77,16 @@ export default function WorkScreen() {
     void loadAssignments();
   };
 
-  // 1. Role-based Access Restriction for Admin & Recruiter
-  if (isAdminOrRecruiterOnly) {
+  if (isAuthLoading) {
+    return (
+      <EmployeeScreen title="Work">
+        <ActivityIndicator color={colors.primary} />
+      </EmployeeScreen>
+    );
+  }
+
+  // 1. Role-based Access Restriction for Admin & Talent Viewer
+  if (isRestricted) {
     return (
       <EmployeeScreen title="Work">
         <EmptyModule

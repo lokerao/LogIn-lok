@@ -31,7 +31,7 @@ type Props = {
 const visibilityOptions: { key: TalentVisibility; label: string }[] = [
   { key: "private", label: "Private" },
   { key: "organization", label: "Organization" },
-  { key: "recruiters", label: "Recruiters" },
+  { key: "recruiters", label: "Talent Network" },
 ];
 
 export function ProjectsSection({ employeeId, projects, onUpdated }: Props) {
