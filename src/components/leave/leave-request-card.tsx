@@ -41,10 +41,11 @@ export function LeaveRequestCard({
 }) {
   const [cancelling, setCancelling] = useState(false);
   const typeName = request.leave_types?.name ?? "Leave";
+  const emp = request.employees;
+  const canonicalName = emp ? `${emp.first_name} ${emp.last_name}`.trim() : "";
   const employeeName =
-    showEmployee && request.employees
-      ? (request.employees.profiles?.display_name ??
-        `${request.employees.first_name} ${request.employees.last_name}`)
+    showEmployee && emp
+      ? canonicalName || emp.profiles?.display_name || "Employee"
       : null;
 
   function confirmCancel() {

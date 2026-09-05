@@ -7,6 +7,9 @@ export default function EmployeeLayout() {
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="attendance" />
         <Stack.Screen name="leave" />
+        <Stack.Screen name="team" />
+        <Stack.Screen name="hr" />
+        <Stack.Screen name="admin" />
       </Stack>
     </EmployeeProvider>
   );

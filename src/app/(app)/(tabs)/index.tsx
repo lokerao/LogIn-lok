@@ -26,13 +26,14 @@ export default function EmployeeHome() {
   const [todayTasks, setTodayTasks] = useState<WorkAssignment[]>([]);
 
   const roles = useMemo(() => identity?.roles ?? [], [identity?.roles]);
-  const isAttendanceEligible = roles.some((r) =>
-    ["employee", "manager", "hr"].includes(r),
-  );
+  const isAdmin = roles.includes("admin");
+  const isAttendanceEligible =
+    !isAdmin && roles.some((r) => ["employee", "manager", "hr"].includes(r));
   const isWorkEligible = roles.some((r) =>
     ["employee", "manager", "hr"].includes(r),
   );
   const isManager = roles.includes("manager");
+  const isHR = roles.includes("hr");
 
   useEffect(() => {
     if (isWorkEligible && roles.includes("employee")) {
@@ -64,8 +65,8 @@ export default function EmployeeHome() {
     );
   }
 
-  const name =
-    employee.displayName ?? `${employee.firstName} ${employee.lastName}`;
+  const canonicalName = `${employee.firstName} ${employee.lastName}`.trim();
+  const name = canonicalName || employee.displayName || "Employee";
 
   return (
     <EmployeeScreen title="Home">
@@ -174,6 +175,46 @@ export default function EmployeeHome() {
         </View>
       )}
 
+      {/* HR Operational Hub Quick Access (Only for HR) */}
+      {isHR && (
+        <View style={employeeStyles.card}>
+          <View style={styles.cardHeader}>
+            <Text style={employeeStyles.label}>HR & Organization Hub</Text>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => router.push("/hr" as any)}
+              style={styles.actionBtn}
+            >
+              <Text style={styles.actionBtnText}>Open HR Hub ↗</Text>
+            </Pressable>
+          </View>
+          <Text style={employeeStyles.body}>
+            Organization directory, headcount metrics, employee lifecycle
+            status, attendance audits, and talent reviews.
+          </Text>
+        </View>
+      )}
+
+      {/* Admin Operational Hub Quick Access (Only for Admin) */}
+      {isAdmin && (
+        <View style={employeeStyles.card}>
+          <View style={styles.cardHeader}>
+            <Text style={employeeStyles.label}>Admin & Organization Hub</Text>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => router.push("/admin" as any)}
+              style={styles.actionBtn}
+            >
+              <Text style={styles.actionBtnText}>Open Admin Hub ↗</Text>
+            </Pressable>
+          </View>
+          <Text style={employeeStyles.body}>
+            System administration, organization structure, departments, teams,
+            locations, and user roles.
+          </Text>
+        </View>
+      )}
+
       <View style={employeeStyles.card}>
         <Text style={employeeStyles.label}>Quick Access</Text>
         <View style={styles.quickLinks}>
@@ -183,6 +224,14 @@ export default function EmployeeHome() {
           >
             <Text style={styles.quickLinkText}>Profile</Text>
           </Pressable>
+          {isAdmin && (
+            <Pressable
+              onPress={() => router.push("/admin" as any)}
+              style={styles.quickLink}
+            >
+              <Text style={styles.quickLinkText}>Admin</Text>
+            </Pressable>
+          )}
           {isManager && (
             <Pressable
               onPress={() => router.push("/team" as any)}

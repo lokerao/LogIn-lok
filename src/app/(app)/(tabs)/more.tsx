@@ -48,16 +48,20 @@ export default function MoreScreen() {
     );
   }
 
+  const canonicalName = employee
+    ? `${employee.firstName} ${employee.lastName}`.trim()
+    : "";
   const name =
+    canonicalName ||
     employee?.displayName ||
-    (employee ? `${employee.firstName} ${employee.lastName}` : null) ||
     identity?.displayName ||
     "Employee";
 
   const email = employee?.workEmail ?? null;
-  const isAttendanceEligible = identity?.roles.some((r) =>
-    ["employee", "manager", "hr"].includes(r),
-  );
+  const isAdmin = identity?.roles.includes("admin");
+  const isAttendanceEligible =
+    !isAdmin &&
+    identity?.roles.some((r) => ["employee", "manager", "hr"].includes(r));
   const isHR = identity?.roles.includes("hr");
   const isManager = identity?.roles.includes("manager");
 
@@ -127,22 +131,60 @@ export default function MoreScreen() {
           )}
 
           {isHR && (
-            <Pressable
-              accessibilityRole="button"
-              onPress={() => router.push("/attendance" as any)}
-              style={styles.navRow}
-            >
-              <View>
-                <Text style={styles.navRowTitle}>
-                  HR Attendance Verification
-                </Text>
-                <Text style={styles.navRowSubtitle}>
-                  Review and verify employee attendance photos
-                </Text>
-              </View>
-              <Text style={styles.navArrow}>›</Text>
-            </Pressable>
+            <>
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => router.push("/hr" as any)}
+                style={styles.navRow}
+              >
+                <View>
+                  <Text style={styles.navRowTitle}>HR & Organization Hub</Text>
+                  <Text style={styles.navRowSubtitle}>
+                    Workforce directory, lifecycle, hierarchy, and talent
+                    reviews
+                  </Text>
+                </View>
+                <Text style={styles.navArrow}>›</Text>
+              </Pressable>
+
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => router.push("/attendance" as any)}
+                style={styles.navRow}
+              >
+                <View>
+                  <Text style={styles.navRowTitle}>
+                    HR Attendance Verification
+                  </Text>
+                  <Text style={styles.navRowSubtitle}>
+                    Review and verify employee attendance photos
+                  </Text>
+                </View>
+                <Text style={styles.navArrow}>›</Text>
+              </Pressable>
+            </>
           )}
+        </View>
+      )}
+
+      {/* Administration Module (For Admin Role) */}
+      {isAdmin && (
+        <View style={employeeStyles.card}>
+          <Text style={employeeStyles.label}>Administration</Text>
+
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => router.push("/admin" as any)}
+            style={styles.navRow}
+          >
+            <View>
+              <Text style={styles.navRowTitle}>Admin & Organization Hub</Text>
+              <Text style={styles.navRowSubtitle}>
+                Organization structure, departments, teams, locations, and roles
+              </Text>
+            </View>
+            <Text style={styles.navArrow}>›</Text>
+          </Pressable>
         </View>
       )}
 

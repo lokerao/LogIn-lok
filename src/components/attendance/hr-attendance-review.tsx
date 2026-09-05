@@ -146,9 +146,13 @@ export function HRAttendanceReview({ records, onUpdated }: Props) {
         <View style={styles.recordList}>
           {filteredRecords.map((record) => {
             const emp = record.employees;
+            const canonicalName = emp
+              ? `${emp.first_name} ${emp.last_name}`.trim()
+              : '';
             const empName =
+              canonicalName ||
               emp?.profiles?.display_name ||
-              (emp ? `${emp.first_name} ${emp.last_name}` : 'Employee');
+              'Employee';
             const empCode = emp?.employee_code || '';
 
             const checkInStatus = getVerificationStatusInfo(record.check_in_verification_status);

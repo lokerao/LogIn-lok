@@ -82,10 +82,10 @@ export function LeaveReviewModal({
 
   if (!request) return null;
 
-  const employeeName = request.employees
-    ? (request.employees.profiles?.display_name ??
-      `${request.employees.first_name} ${request.employees.last_name}`)
-    : "Employee";
+  const emp = request.employees;
+  const canonicalName = emp ? `${emp.first_name} ${emp.last_name}`.trim() : "";
+  const employeeName =
+    canonicalName || emp?.profiles?.display_name || "Employee";
   const typeName = request.leave_types?.name ?? "Leave";
 
   return (

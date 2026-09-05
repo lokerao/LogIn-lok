@@ -23,3 +23,9 @@ export const workEligibleRoles: readonly AppRole[] = [
 
 /** Manager module is available strictly to managers (not admin, not recruiter). */
 export const managerEligibleRoles: readonly AppRole[] = ["manager"];
+
+/** HR operational module is available strictly to HR (not admin, not recruiter). */
+export const hrEligibleRoles: readonly AppRole[] = ["hr"];
+
+/** Admin management module is available strictly to system administrators (not HR, not manager, not employee, not recruiter). */
+export const adminEligibleRoles: readonly AppRole[] = ["admin"];
