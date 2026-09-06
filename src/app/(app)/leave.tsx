@@ -12,6 +12,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { EmptyModule, employeeStyles } from "@/components/employee-screen";
+import { AdminHRLeaveReview } from "@/components/leave/admin-hr-leave-review";
 import { ApplyLeaveModal } from "@/components/leave/apply-leave-modal";
 import { HRLeaveReview } from "@/components/leave/hr-leave-review";
 import { LeaveBalanceCard } from "@/components/leave/leave-balance-card";
@@ -44,7 +45,9 @@ export default function LeaveScreen() {
   const isEmployee = roles.includes("employee");
   const isManager = roles.includes("manager");
   const isHR = roles.includes("hr");
+  const isAdmin = roles.includes("admin");
   const isLeaveEligible = !isViewer && (isEmployee || isManager || isHR);
+  const canAccessLeave = !isViewer && (isLeaveEligible || isAdmin);
 
   const loadEmployeeData = useCallback(
     async (isRefresh = false) => {
@@ -87,7 +90,7 @@ export default function LeaveScreen() {
   }
 
   // Unauthorized roles: block access entirely
-  if (!isLeaveEligible) {
+  if (!canAccessLeave) {
     return (
       <SafeAreaView style={styles.safe}>
         <ScrollView contentContainerStyle={styles.content}>
@@ -99,6 +102,23 @@ export default function LeaveScreen() {
             title="Access Restricted"
             message="Leave management is not available for your role."
           />
+        </ScrollView>
+      </SafeAreaView>
+    );
+  }
+
+  // Admin role: Show HR Leave Approvals directly without requiring employee profile
+  if (isAdmin && !isLeaveEligible) {
+    return (
+      <SafeAreaView style={styles.safe}>
+        <ScrollView contentContainerStyle={styles.content}>
+          <View style={styles.headerRow}>
+            <Pressable onPress={() => router.back()} style={styles.backBtn}>
+              <Text style={styles.backText}>‹ Back</Text>
+            </Pressable>
+          </View>
+          <Text style={styles.title}>Leave</Text>
+          <AdminHRLeaveReview />
         </ScrollView>
       </SafeAreaView>
     );
@@ -121,7 +141,7 @@ export default function LeaveScreen() {
     );
   }
 
-  if (error && !isHR && !isManager) {
+  if (error && !isHR && !isManager && !isAdmin) {
     return (
       <SafeAreaView style={styles.safe}>
         <ScrollView contentContainerStyle={styles.content}>
@@ -161,8 +181,8 @@ export default function LeaveScreen() {
         </View>
         <Text style={styles.title}>Leave</Text>
 
-        {/* ── EMPLOYEE SECTION ── */}
-        {isEmployee && (
+        {/* ── PERSONAL LEAVE SECTION (Employee, Manager, HR) ── */}
+        {isLeaveEligible && (
           <>
             {/* Balances */}
             <LeaveBalanceCard balances={balances} />
@@ -204,14 +224,19 @@ export default function LeaveScreen() {
 
         {/* ── HR SECTION ── */}
         {isHR && <HRLeaveReview />}
+
+        {/* ── ADMIN SECTION ── */}
+        {isAdmin && <AdminHRLeaveReview />}
       </ScrollView>
 
       {/* Apply Leave Modal */}
-      <ApplyLeaveModal
-        visible={applyVisible}
-        onClose={() => setApplyVisible(false)}
-        onSubmitted={handleApplySubmitted}
-      />
+      {isLeaveEligible && (
+        <ApplyLeaveModal
+          visible={applyVisible}
+          onClose={() => setApplyVisible(false)}
+          onSubmitted={handleApplySubmitted}
+        />
+      )}
     </SafeAreaView>
   );
 }

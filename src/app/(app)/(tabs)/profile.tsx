@@ -1,8 +1,9 @@
 import {
-    EmployeeScreen,
-    EmptyModule,
-    employeeStyles,
+  EmployeeScreen,
+  EmptyModule,
+  employeeStyles,
 } from "@/components/employee-screen";
+import { ChangePasswordModal } from "@/components/profile/change-password-modal";
 import { Button } from "@/components/ui/button";
 import { colors, radius, spacing, typography } from "@/constants/design-system";
 import { useAuth } from "@/features/auth/auth-provider";
@@ -10,12 +11,13 @@ import { useEmployee } from "@/features/employee/employee-provider";
 import { isTalentViewer } from "@/types/roles";
 import { useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    StyleSheet,
-    Text,
-    TextInput,
-    View,
+  ActivityIndicator,
+  Alert,
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
 } from "react-native";
 
 export default function ProfileScreen() {
@@ -27,6 +29,7 @@ export default function ProfileScreen() {
   const [name, setName] = useState("");
   const [saving, setSaving] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
+  const [changePasswordVisible, setChangePasswordVisible] = useState(false);
 
   async function handleSignOut() {
     setIsSigningOut(true);
@@ -99,11 +102,31 @@ export default function ProfileScreen() {
         </View>
 
         <View style={employeeStyles.card}>
+          <Text style={employeeStyles.label}>Account Security</Text>
+          <Pressable
+            accessibilityLabel="Change password"
+            accessibilityRole="button"
+            onPress={() => setChangePasswordVisible(true)}
+            style={({ pressed }) => [
+              styles.changePasswordBtn,
+              pressed && styles.changePasswordBtnPressed,
+            ]}
+          >
+            <Text style={styles.changePasswordBtnText}>Change Password</Text>
+          </Pressable>
+        </View>
+
+        <View style={employeeStyles.card}>
           <Text style={employeeStyles.label}>Account Session</Text>
           <Button accessibilityLabel="Log out" onPress={confirmSignOut}>
             {isSigningOut ? "Signing out…" : "Log out"}
           </Button>
         </View>
+
+        <ChangePasswordModal
+          onClose={() => setChangePasswordVisible(false)}
+          visible={changePasswordVisible}
+        />
       </EmployeeScreen>
     );
   }
@@ -219,6 +242,28 @@ export default function ProfileScreen() {
           </View>
         ))}
       </View>
+      <View style={employeeStyles.card}>
+        <Text style={employeeStyles.label}>Account Security</Text>
+        <Text style={employeeStyles.muted}>
+          Keep your work account secure by managing your password.
+        </Text>
+        <Pressable
+          accessibilityLabel="Change password"
+          accessibilityRole="button"
+          onPress={() => setChangePasswordVisible(true)}
+          style={({ pressed }) => [
+            styles.changePasswordBtn,
+            pressed && styles.changePasswordBtnPressed,
+          ]}
+        >
+          <Text style={styles.changePasswordBtnText}>Change Password</Text>
+        </Pressable>
+      </View>
+
+      <ChangePasswordModal
+        onClose={() => setChangePasswordVisible(false)}
+        visible={changePasswordVisible}
+      />
     </EmployeeScreen>
   );
 }
@@ -300,5 +345,19 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 22,
     marginTop: spacing.xs,
+  },
+  changePasswordBtn: {
+    alignItems: "center",
+    backgroundColor: colors.primary,
+    borderRadius: radius.md,
+    marginTop: spacing.xs,
+    paddingVertical: spacing.md,
+  },
+  changePasswordBtnPressed: {
+    backgroundColor: colors.primaryPressed,
+  },
+  changePasswordBtnText: {
+    color: colors.white,
+    ...typography.button,
   },
 });

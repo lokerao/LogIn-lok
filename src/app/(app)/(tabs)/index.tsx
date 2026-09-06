@@ -1,17 +1,17 @@
 import { useRouter } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import {
-  ActivityIndicator,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
+    ActivityIndicator,
+    Pressable,
+    StyleSheet,
+    Text,
+    View,
 } from "react-native";
 
 import {
-  EmployeeScreen,
-  EmptyModule,
-  employeeStyles,
+    EmployeeScreen,
+    EmptyModule,
+    employeeStyles,
 } from "@/components/employee-screen";
 import { TalentViewerDashboard } from "@/components/talent-network/talent-viewer-dashboard";
 import { colors, radius, spacing, typography } from "@/constants/design-system";
@@ -242,12 +242,20 @@ export default function EmployeeHome() {
             <Text style={styles.quickLinkText}>Profile</Text>
           </Pressable>
           {isAdmin && (
-            <Pressable
-              onPress={() => router.push("/admin" as any)}
-              style={styles.quickLink}
-            >
-              <Text style={styles.quickLinkText}>Admin</Text>
-            </Pressable>
+            <>
+              <Pressable
+                onPress={() => router.push("/admin" as any)}
+                style={styles.quickLink}
+              >
+                <Text style={styles.quickLinkText}>Admin</Text>
+              </Pressable>
+              <Pressable
+                onPress={() => router.push("/leave" as any)}
+                style={styles.quickLink}
+              >
+                <Text style={styles.quickLinkText}>HR Leave</Text>
+              </Pressable>
+            </>
           )}
           {isManager && (
             <Pressable

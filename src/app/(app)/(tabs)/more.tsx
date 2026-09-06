@@ -219,6 +219,20 @@ export default function MoreScreen() {
             </View>
             <Text style={styles.navArrow}>›</Text>
           </Pressable>
+
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => router.push("/leave" as any)}
+            style={styles.navRow}
+          >
+            <View>
+              <Text style={styles.navRowTitle}>HR Leave Approvals</Text>
+              <Text style={styles.navRowSubtitle}>
+                Review and approve leave requests submitted by HR personnel
+              </Text>
+            </View>
+            <Text style={styles.navArrow}>›</Text>
+          </Pressable>
         </View>
       )}
 

@@ -1,13 +1,15 @@
+import { AuthProvider, useAuth } from '@/features/auth/auth-provider';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { AuthProvider, useAuth } from '@/features/auth/auth-provider';
 
 export default function RootLayout() {
   return <AuthProvider><RootNavigator /></AuthProvider>;
 }
 function RootNavigator() {
-  const { identity, isReady, session } = useAuth();
-  const canAccessApp = Boolean(session && identity?.status === 'active');
+  const { identity, isReady, session, isRecoveringPassword } = useAuth();
+  const canAccessApp = Boolean(
+    session && identity?.status === 'active' && !isRecoveringPassword,
+  );
   if (!isReady) return null;
   return (
     <>

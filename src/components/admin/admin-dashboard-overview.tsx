@@ -6,7 +6,7 @@ import type { AdminDashboardSummary } from "@/types/admin";
 interface AdminDashboardOverviewProps {
   summary: AdminDashboardSummary;
   onNavigateTab: (
-    tab: "employees" | "structure" | "roles",
+    tab: "employees" | "structure" | "roles" | "leave",
     subSection?: string,
   ) => void;
 }
@@ -72,6 +72,36 @@ export function AdminDashboardOverview({
             </Text>
             <Text style={styles.kpiNote}>Offboarded</Text>
           </View>
+        </View>
+      </View>
+
+      {/* Leave Approvals Card */}
+      <View style={styles.sectionCard}>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Leave Approvals</Text>
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => onNavigateTab("leave")}
+            style={styles.viewLink}
+          >
+            <Text style={styles.viewLinkText}>Review Requests ↗</Text>
+          </Pressable>
+        </View>
+
+        <View style={styles.leaveApprovalsBox}>
+          <View style={styles.leaveApprovalsInfo}>
+            <Text style={styles.leaveApprovalsTitle}>HR Personal Leave</Text>
+            <Text style={styles.leaveApprovalsDesc}>
+              Review and approve leave requests submitted by HR personnel
+            </Text>
+          </View>
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => onNavigateTab("leave")}
+            style={styles.leaveApprovalsBtn}
+          >
+            <Text style={styles.leaveApprovalsBtnText}>Open</Text>
+          </Pressable>
         </View>
       </View>
 
@@ -281,6 +311,21 @@ export function AdminDashboardOverview({
 
           <Pressable
             accessibilityRole="button"
+            onPress={() => onNavigateTab("leave")}
+            style={styles.actionRow}
+          >
+            <View style={styles.actionInfo}>
+              <Text style={styles.actionTitle}>HR Leave Approvals</Text>
+              <Text style={styles.actionSubtitle}>
+                Review and approve personal leave requests submitted by HR
+                personnel
+              </Text>
+            </View>
+            <Text style={styles.arrowText}>›</Text>
+          </Pressable>
+
+          <Pressable
+            accessibilityRole="button"
             onPress={() => onNavigateTab("structure", "tree")}
             style={styles.actionRow}
           >
@@ -465,5 +510,38 @@ const styles = StyleSheet.create({
     color: colors.muted,
     fontSize: 16,
     fontWeight: "700",
+  },
+  leaveApprovalsBox: {
+    alignItems: "center",
+    backgroundColor: colors.canvas,
+    borderRadius: radius.sm,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    padding: spacing.md,
+  },
+  leaveApprovalsInfo: {
+    flex: 1,
+    paddingRight: spacing.sm,
+  },
+  leaveApprovalsTitle: {
+    color: colors.ink,
+    fontSize: 14,
+    fontWeight: "700",
+  },
+  leaveApprovalsDesc: {
+    color: colors.muted,
+    fontSize: 12,
+    marginTop: 2,
+  },
+  leaveApprovalsBtn: {
+    backgroundColor: colors.primary,
+    borderRadius: radius.sm,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+  },
+  leaveApprovalsBtnText: {
+    color: colors.white,
+    fontSize: 13,
+    fontWeight: "600",
   },
 });

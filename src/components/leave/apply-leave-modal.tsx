@@ -1,8 +1,13 @@
+import DateTimePicker, {
+    DateTimePickerAndroid,
+    type DateTimePickerChangeEvent,
+} from "@react-native-community/datetimepicker";
 import { useEffect, useRef, useState } from "react";
 import {
     ActivityIndicator,
     Alert,
     Modal,
+    Platform,
     Pressable,
     ScrollView,
     StyleSheet,
@@ -14,11 +19,16 @@ import {
 
 import { colors, radius, spacing, typography } from "@/constants/design-system";
 import {
+    backendStringToDate,
+    dateToBackendString,
     fetchLeaveTypes,
     formatLeaveDays,
+    getTodayDateObject,
+    getTodayDateString,
     isValidDateString,
     previewDays,
     submitLeaveRequest,
+    toDisplayDate,
 } from "@/features/leave/leave-service";
 import type { LeaveType } from "@/types/leave";
 
@@ -38,6 +48,14 @@ export function ApplyLeaveModal({ visible, onClose, onSubmitted }: Props) {
   const [reason, setReason] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Field-specific validation errors for inline display
+  const [startDateError, setStartDateError] = useState<string | null>(null);
+  const [endDateError, setEndDateError] = useState<string | null>(null);
+  const [reasonError, setReasonError] = useState<string | null>(null);
+
+  // Calendar picker state for iOS / fallback modal
+  const [activePicker, setActivePicker] = useState<"start" | "end" | null>(null);
 
   // Submission lock — prevents double-tap
   const submitLock = useRef(false);
@@ -67,6 +85,10 @@ export function ApplyLeaveModal({ visible, onClose, onSubmitted }: Props) {
     setIsHalfDay(false);
     setReason("");
     setError(null);
+    setStartDateError(null);
+    setEndDateError(null);
+    setReasonError(null);
+    setActivePicker(null);
     submitLock.current = false;
   }
 
@@ -75,28 +97,136 @@ export function ApplyLeaveModal({ visible, onClose, onSubmitted }: Props) {
     onClose();
   }
 
-  function validate(): string | null {
-    if (!selectedTypeId) return "Please select a leave type.";
-    if (!isValidDateString(startDate))
-      return "Enter a valid start date (YYYY-MM-DD).";
-    if (!isValidDateString(endDate))
-      return "Enter a valid end date (YYYY-MM-DD).";
-    if (endDate < startDate) return "End date cannot be before start date.";
-    if (isHalfDay && startDate !== endDate)
-      return "Half-day leave must be a single day.";
-    if (isHalfDay && selectedType && !selectedType.allows_half_day)
-      return `${selectedType.name} does not support half-day requests.`;
-    if (reason.trim().length < 5)
-      return "Please provide a reason (at least 5 characters).";
-    return null;
+  function handleDateSelected(field: "start" | "end", date: Date) {
+    const yyyymmdd = dateToBackendString(date);
+    const today = getTodayDateString();
+
+    if (field === "start") {
+      if (yyyymmdd < today) {
+        setStartDateError("Leave cannot be requested for past dates.");
+      } else {
+        setStartDateError(null);
+      }
+      setStartDate(yyyymmdd);
+      if (isHalfDay) {
+        setEndDate(yyyymmdd);
+        setEndDateError(null);
+      } else if (endDate && endDate < yyyymmdd) {
+        setEndDate(yyyymmdd);
+        setEndDateError(null);
+      }
+    } else {
+      if (yyyymmdd < today) {
+      } else if (startDate && yyyymmdd < startDate) {
+        setEndDateError("End date cannot be before start date.");
+      } else {
+        setEndDateError(null);
+      }
+      setEndDate(yyyymmdd);
+    }
+    setActivePicker(null);
+  }
+
+  function openDatePicker(field: "start" | "end") {
+    const isStart = field === "start";
+    const currentVal = isStart
+      ? startDate
+        ? backendStringToDate(startDate)
+        : getTodayDateObject()
+      : endDate
+        ? backendStringToDate(endDate)
+        : startDate
+          ? backendStringToDate(startDate)
+          : getTodayDateObject();
+
+    const minDate = isStart
+      ? getTodayDateObject()
+      : startDate
+        ? backendStringToDate(startDate)
+        : getTodayDateObject();
+
+    if (Platform.OS === "android") {
+      try {
+        DateTimePickerAndroid.open({
+          value: currentVal,
+          mode: "date",
+          minimumDate: minDate,
+          onValueChange: (
+            _event: DateTimePickerChangeEvent,
+            selectedDate: Date,
+          ) => {
+            handleDateSelected(field, selectedDate);
+          },
+          onDismiss: () => {
+            setActivePicker(null);
+          },
+        });
+        return;
+      } catch {
+        // Fallback to activePicker modal if native module is unavailable
+      }
+    }
+
+    setActivePicker(field);
+  }
+
+  function validate(): boolean {
+    let isValid = true;
+    setStartDateError(null);
+    setEndDateError(null);
+    setReasonError(null);
+    setError(null);
+
+    if (!selectedTypeId) {
+      setError("Please select a leave type.");
+      return false;
+    }
+
+    const today = getTodayDateString();
+
+    if (!startDate || !isValidDateString(startDate)) {
+      setStartDateError("Please select a start date.");
+      isValid = false;
+    } else if (startDate < today) {
+      setStartDateError("Leave cannot be requested for past dates.");
+      isValid = false;
+    }
+
+    if (!isHalfDay) {
+      if (!endDate || !isValidDateString(endDate)) {
+        setEndDateError("Please select an end date.");
+        isValid = false;
+      } else if (endDate < today) {
+        setEndDateError("Leave cannot be requested for past dates.");
+        isValid = false;
+      } else if (startDate && endDate < startDate) {
+        setEndDateError("End date cannot be before start date.");
+        isValid = false;
+      }
+    } else if (startDate && isHalfDay) {
+      if (selectedType && !selectedType.allows_half_day) {
+        setError(`${selectedType.name} does not support half-day requests.`);
+        isValid = false;
+      }
+    }
+
+    const trimmedReason = reason.trim();
+    if (!trimmedReason) {
+      setReasonError("Please enter a reason for your leave.");
+      isValid = false;
+    } else if (trimmedReason.length < 5) {
+      setReasonError("Please provide a reason (at least 5 characters).");
+      isValid = false;
+    } else if (trimmedReason.length > 1000) {
+      setReasonError("Reason cannot exceed 1000 characters.");
+      isValid = false;
+    }
+
+    return isValid;
   }
 
   async function handleSubmit() {
-    const validationError = validate();
-    if (validationError) {
-      setError(validationError);
-      return;
-    }
+    if (!validate()) return;
     if (submitLock.current) return;
     submitLock.current = true;
     setSubmitting(true);
@@ -105,7 +235,7 @@ export function ApplyLeaveModal({ visible, onClose, onSubmitted }: Props) {
       await submitLeaveRequest({
         leaveTypeId: selectedTypeId,
         startDate: startDate.trim(),
-        endDate: endDate.trim(),
+        endDate: (isHalfDay ? startDate : endDate).trim(),
         reason: reason.trim(),
         isHalfDay,
       });
@@ -122,16 +252,14 @@ export function ApplyLeaveModal({ visible, onClose, onSubmitted }: Props) {
   }
 
   function confirmSubmit() {
-    const validationError = validate();
-    if (validationError) {
-      setError(validationError);
-      return;
-    }
+    if (!validate()) return;
     const typeName = selectedType?.name ?? "Leave";
     const daysText = preview !== null ? formatLeaveDays(preview) : "?";
+    const startDisplay = toDisplayDate(startDate);
+    const endDisplay = toDisplayDate(endDate);
     Alert.alert(
       "Confirm Leave Request",
-      `Submit ${typeName} request for ${daysText} from ${startDate}${startDate !== endDate ? ` to ${endDate}` : ""}?`,
+      `Submit ${typeName} request for ${daysText} from ${startDisplay}${!isHalfDay && startDisplay !== endDisplay ? ` to ${endDisplay}` : ""}?`,
       [
         { text: "Edit", style: "cancel" },
         { text: "Submit", onPress: () => void handleSubmit() },
@@ -200,33 +328,56 @@ export function ApplyLeaveModal({ visible, onClose, onSubmitted }: Props) {
             <View style={styles.row}>
               <View style={[styles.field, styles.flex1]}>
                 <Text style={styles.label}>Start Date</Text>
-                <TextInput
-                  autoCapitalize="none"
-                  keyboardType="numeric"
-                  maxLength={10}
-                  onChangeText={(v) => {
-                    setStartDate(v);
-                    if (isHalfDay) setEndDate(v);
-                  }}
-                  placeholder="YYYY-MM-DD"
-                  placeholderTextColor={colors.muted}
-                  style={styles.input}
-                  value={startDate}
-                />
+                <Pressable
+                  accessibilityLabel="Select start date"
+                  accessibilityRole="button"
+                  onPress={() => openDatePicker("start")}
+                  style={({ pressed }) => [
+                    styles.datePickerBtn,
+                    pressed && styles.datePickerBtnPressed,
+                    Boolean(startDateError) && styles.inputError,
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.datePickerText,
+                      !startDate && styles.datePickerPlaceholder,
+                    ]}
+                  >
+                    {startDate ? toDisplayDate(startDate) : "DD-MM-YYYY"}
+                  </Text>
+                  <Text style={styles.calendarIcon}>📅</Text>
+                </Pressable>
+                {Boolean(startDateError) && (
+                  <Text style={styles.fieldErrorText}>{startDateError}</Text>
+                )}
               </View>
               {!isHalfDay && (
                 <View style={[styles.field, styles.flex1]}>
                   <Text style={styles.label}>End Date</Text>
-                  <TextInput
-                    autoCapitalize="none"
-                    keyboardType="numeric"
-                    maxLength={10}
-                    onChangeText={setEndDate}
-                    placeholder="YYYY-MM-DD"
-                    placeholderTextColor={colors.muted}
-                    style={styles.input}
-                    value={endDate}
-                  />
+                  <Pressable
+                    accessibilityLabel="Select end date"
+                    accessibilityRole="button"
+                    onPress={() => openDatePicker("end")}
+                    style={({ pressed }) => [
+                      styles.datePickerBtn,
+                      pressed && styles.datePickerBtnPressed,
+                      Boolean(endDateError) && styles.inputError,
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.datePickerText,
+                        !endDate && styles.datePickerPlaceholder,
+                      ]}
+                    >
+                      {endDate ? toDisplayDate(endDate) : "DD-MM-YYYY"}
+                    </Text>
+                    <Text style={styles.calendarIcon}>📅</Text>
+                  </Pressable>
+                  {Boolean(endDateError) && (
+                    <Text style={styles.fieldErrorText}>{endDateError}</Text>
+                  )}
                 </View>
               )}
             </View>
@@ -238,7 +389,10 @@ export function ApplyLeaveModal({ visible, onClose, onSubmitted }: Props) {
                 <Switch
                   onValueChange={(v) => {
                     setIsHalfDay(v);
-                    if (v) setEndDate(startDate);
+                    if (v) {
+                      setEndDate(startDate);
+                      setEndDateError(null);
+                    }
                   }}
                   thumbColor={isHalfDay ? colors.white : colors.muted}
                   trackColor={{ false: "#EEF1F6", true: colors.primary }}
@@ -263,17 +417,29 @@ export function ApplyLeaveModal({ visible, onClose, onSubmitted }: Props) {
                 maxLength={1000}
                 multiline
                 numberOfLines={4}
-                onChangeText={setReason}
+                onChangeText={(v) => {
+                  setReason(v);
+                  if (reasonError && v.trim().length >= 5) {
+                    setReasonError(null);
+                  }
+                }}
                 placeholder="Briefly explain why you need this leave…"
                 placeholderTextColor={colors.muted}
-                style={[styles.input, styles.textarea]}
+                style={[
+                  styles.input,
+                  styles.textarea,
+                  Boolean(reasonError) && styles.inputError,
+                ]}
                 textAlignVertical="top"
                 value={reason}
               />
+              {Boolean(reasonError) && (
+                <Text style={styles.fieldErrorText}>{reasonError}</Text>
+              )}
               <Text style={styles.charCount}>{reason.trim().length}/1000</Text>
             </View>
 
-            {/* Error */}
+            {/* General Error */}
             {Boolean(error) && (
               <View style={styles.errorBox}>
                 <Text style={styles.errorText}>{error}</Text>
@@ -299,6 +465,60 @@ export function ApplyLeaveModal({ visible, onClose, onSubmitted }: Props) {
           </ScrollView>
         </View>
       </View>
+
+      {/* iOS / Fallback Calendar Picker Modal */}
+      {activePicker && Platform.OS !== "android" && (
+        <Modal
+          animationType="fade"
+          onRequestClose={() => setActivePicker(null)}
+          transparent
+          visible={Boolean(activePicker)}
+        >
+          <View style={styles.iosPickerBackdrop}>
+            <View style={styles.iosPickerSheet}>
+              <View style={styles.iosPickerHeader}>
+                <Text style={styles.iosPickerTitle}>
+                  Select {activePicker === "start" ? "Start Date" : "End Date"}
+                </Text>
+                <Pressable onPress={() => setActivePicker(null)}>
+                  <Text style={styles.iosPickerDone}>Done</Text>
+                </Pressable>
+              </View>
+              <DateTimePicker
+                display={Platform.OS === "ios" ? "inline" : "default"}
+                minimumDate={
+                  activePicker === "start"
+                    ? getTodayDateObject()
+                    : startDate
+                      ? backendStringToDate(startDate)
+                      : getTodayDateObject()
+                }
+                mode="date"
+                onDismiss={() => {
+                  setActivePicker(null);
+                }}
+                onValueChange={(
+                  _event: DateTimePickerChangeEvent,
+                  selectedDate: Date,
+                ) => {
+                  handleDateSelected(activePicker, selectedDate);
+                }}
+                value={
+                  activePicker === "start"
+                    ? startDate
+                      ? backendStringToDate(startDate)
+                      : getTodayDateObject()
+                    : endDate
+                      ? backendStringToDate(endDate)
+                      : startDate
+                        ? backendStringToDate(startDate)
+                        : getTodayDateObject()
+                }
+              />
+            </View>
+          </View>
+        </Modal>
+      )}
     </Modal>
   );
 }
@@ -391,4 +611,65 @@ const styles = StyleSheet.create({
   submitBtnPressed: { backgroundColor: colors.primaryPressed },
   submitBtnDisabled: { opacity: 0.7 },
   submitText: { color: colors.white, ...typography.button },
+  datePickerBtn: {
+    alignItems: "center",
+    backgroundColor: colors.canvas,
+    borderColor: "#DEE4EF",
+    borderRadius: radius.sm,
+    borderWidth: 1,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    minHeight: 48,
+    paddingHorizontal: spacing.md,
+  },
+  datePickerBtnPressed: {
+    backgroundColor: "#EDF1F7",
+  },
+  datePickerText: {
+    color: colors.ink,
+    fontSize: 15,
+    fontWeight: "500",
+  },
+  datePickerPlaceholder: {
+    color: colors.muted,
+  },
+  calendarIcon: {
+    fontSize: 16,
+  },
+  inputError: {
+    borderColor: "#B42318",
+  },
+  fieldErrorText: {
+    color: "#B42318",
+    fontSize: 12,
+    fontWeight: "500",
+    marginTop: 2,
+  },
+  iosPickerBackdrop: {
+    backgroundColor: "rgba(23,34,53,0.45)",
+    flex: 1,
+    justifyContent: "center",
+    padding: spacing.lg,
+  },
+  iosPickerSheet: {
+    backgroundColor: colors.white,
+    borderRadius: radius.md,
+    padding: spacing.lg,
+  },
+  iosPickerHeader: {
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: spacing.md,
+  },
+  iosPickerTitle: {
+    color: colors.ink,
+    fontSize: 16,
+    fontWeight: "700",
+  },
+  iosPickerDone: {
+    color: colors.primary,
+    fontSize: 16,
+    fontWeight: "700",
+  },
 });

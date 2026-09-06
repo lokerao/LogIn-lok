@@ -1,14 +1,14 @@
 import { useRouter } from "expo-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  ActivityIndicator,
-  Pressable,
-  RefreshControl,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
+    ActivityIndicator,
+    Pressable,
+    RefreshControl,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -22,22 +22,23 @@ import { AdminOrgStructureView } from "@/components/admin/admin-org-structure-vi
 import { AdminRolesView } from "@/components/admin/admin-roles-view";
 import { AdminTeamsView } from "@/components/admin/admin-teams-view";
 import { EmptyModule } from "@/components/employee-screen";
+import { AdminHRLeaveReview } from "@/components/leave/admin-hr-leave-review";
 import { TalentViewerRequestsReviewModal } from "@/components/talent-network/talent-viewer-requests-review-modal";
 import { colors, radius, spacing } from "@/constants/design-system";
 import {
-  fetchAdminDashboardSummary,
-  fetchAdminDepartments,
-  fetchAdminEmployees,
+    fetchAdminDashboardSummary,
+    fetchAdminDepartments,
+    fetchAdminEmployees,
 } from "@/features/admin/admin-service";
 import { useAuth } from "@/features/auth/auth-provider";
 import type {
-  AdminDashboardSummary,
-  AdminDepartment,
-  AdminEmployeeListItem,
+    AdminDashboardSummary,
+    AdminDepartment,
+    AdminEmployeeListItem,
 } from "@/types/admin";
 import type { AppRole } from "@/types/roles";
 
-type AdminTab = "dashboard" | "employees" | "structure" | "roles";
+type AdminTab = "dashboard" | "employees" | "structure" | "roles" | "leave";
 type StructureSubTab =
   "departments" | "teams" | "designations" | "locations" | "tree";
 
@@ -174,7 +175,7 @@ export default function AdminScreen() {
   }
 
   function handleNavigateFromDashboard(
-    tab: "employees" | "structure" | "roles",
+    tab: "employees" | "structure" | "roles" | "leave",
     subSection?: string,
   ) {
     setActiveTab(tab);
@@ -230,71 +231,93 @@ export default function AdminScreen() {
       </View>
 
       {/* Main Tabs Navigation */}
-      <View style={styles.tabContainer}>
-        <Pressable
-          onPress={() => setActiveTab("dashboard")}
-          style={[
-            styles.segmentBtn,
-            activeTab === "dashboard" && styles.segmentBtnActive,
-          ]}
+      <View style={styles.tabBarWrapper}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.tabContainer}
         >
-          <Text
+          <Pressable
+            onPress={() => setActiveTab("dashboard")}
             style={[
-              styles.segmentText,
-              activeTab === "dashboard" && styles.segmentTextActive,
+              styles.segmentBtn,
+              activeTab === "dashboard" && styles.segmentBtnActive,
             ]}
           >
-            Dashboard
-          </Text>
-        </Pressable>
-        <Pressable
-          onPress={() => setActiveTab("employees")}
-          style={[
-            styles.segmentBtn,
-            activeTab === "employees" && styles.segmentBtnActive,
-          ]}
-        >
-          <Text
+            <Text
+              style={[
+                styles.segmentText,
+                activeTab === "dashboard" && styles.segmentTextActive,
+              ]}
+            >
+              Dashboard
+            </Text>
+          </Pressable>
+          <Pressable
+            onPress={() => setActiveTab("employees")}
             style={[
-              styles.segmentText,
-              activeTab === "employees" && styles.segmentTextActive,
+              styles.segmentBtn,
+              activeTab === "employees" && styles.segmentBtnActive,
             ]}
           >
-            Employees ({employees.length})
-          </Text>
-        </Pressable>
-        <Pressable
-          onPress={() => setActiveTab("structure")}
-          style={[
-            styles.segmentBtn,
-            activeTab === "structure" && styles.segmentBtnActive,
-          ]}
-        >
-          <Text
+            <Text
+              style={[
+                styles.segmentText,
+                activeTab === "employees" && styles.segmentTextActive,
+              ]}
+            >
+              Employees ({employees.length})
+            </Text>
+          </Pressable>
+          <Pressable
+            onPress={() => setActiveTab("structure")}
             style={[
-              styles.segmentText,
-              activeTab === "structure" && styles.segmentTextActive,
+              styles.segmentBtn,
+              activeTab === "structure" && styles.segmentBtnActive,
             ]}
           >
-            Structure
-          </Text>
-        </Pressable>
-        <Pressable
-          onPress={() => setActiveTab("roles")}
-          style={[
-            styles.segmentBtn,
-            activeTab === "roles" && styles.segmentBtnActive,
-          ]}
-        >
-          <Text
+            <Text
+              style={[
+                styles.segmentText,
+                activeTab === "structure" && styles.segmentTextActive,
+              ]}
+            >
+              Structure
+            </Text>
+          </Pressable>
+          <Pressable
+            onPress={() => setActiveTab("roles")}
             style={[
-              styles.segmentText,
-              activeTab === "roles" && styles.segmentTextActive,
+              styles.segmentBtn,
+              activeTab === "roles" && styles.segmentBtnActive,
             ]}
           >
-            Roles & Access
-          </Text>
-        </Pressable>
+            <Text
+              style={[
+                styles.segmentText,
+                activeTab === "roles" && styles.segmentTextActive,
+              ]}
+            >
+              Roles & Access
+            </Text>
+          </Pressable>
+          <Pressable
+            onPress={() => setActiveTab("leave")}
+            style={[
+              styles.segmentBtn,
+              activeTab === "leave" && styles.segmentBtnActive,
+            ]}
+          >
+            <Text
+              style={[
+                styles.segmentText,
+                activeTab === "leave" && styles.segmentTextActive,
+              ]}
+            >
+              Leave Approvals
+            </Text>
+          </Pressable>
+        </ScrollView>
       </View>
 
       {/* Main Tab Content */}
@@ -552,6 +575,13 @@ export default function AdminScreen() {
 
           {/* TAB 4: ROLES & ACCESS */}
           {activeTab === "roles" && <AdminRolesView />}
+
+          {/* TAB 5: LEAVE APPROVALS */}
+          {activeTab === "leave" && (
+            <View style={styles.tabBody}>
+              <AdminHRLeaveReview />
+            </View>
+          )}
         </ScrollView>
       )}
 
@@ -624,17 +654,19 @@ const styles = StyleSheet.create({
     color: colors.muted,
     fontSize: 12,
   },
-  tabContainer: {
+  tabBarWrapper: {
     backgroundColor: colors.white,
     borderBottomColor: "#E2E8F0",
     borderBottomWidth: 1,
+  },
+  tabContainer: {
     flexDirection: "row",
     paddingHorizontal: spacing.sm,
   },
   segmentBtn: {
     borderBottomColor: "transparent",
     borderBottomWidth: 2,
-    flex: 1,
+    paddingHorizontal: 14,
     paddingVertical: 12,
   },
   segmentBtnActive: {
