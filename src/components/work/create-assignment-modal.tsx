@@ -1,15 +1,26 @@
 import { colors, radius, spacing } from "@/constants/design-system";
 import {
+    backendStringToDate,
+    dateToBackendString,
+    getTodayDateObject,
+    toDisplayDate,
+} from "@/features/leave/leave-service";
+import {
     createWorkAssignment,
     fetchDirectReports,
     getTodayDateString,
 } from "@/features/work/work-service";
 import type { DirectReport, WorkAssignmentPriority } from "@/types/work";
+import DateTimePicker, {
+    DateTimePickerAndroid,
+    type DateTimePickerChangeEvent,
+} from "@react-native-community/datetimepicker";
 import { useCallback, useEffect, useState } from "react";
 import {
     ActivityIndicator,
     Alert,
     Modal,
+    Platform,
     Pressable,
     ScrollView,
     StyleSheet,
@@ -36,6 +47,7 @@ export function CreateAssignmentModal({
 
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string>("");
   const [workDate, setWorkDate] = useState<string>(getTodayDateString());
+  const [showDatePicker, setShowDatePicker] = useState<boolean>(false);
   const [title, setTitle] = useState<string>("");
   const [description, setDescription] = useState<string>("");
   const [expectedOutcome, setExpectedOutcome] = useState<string>("");
@@ -45,6 +57,7 @@ export function CreateAssignmentModal({
 
   const loadReportsAndReset = useCallback(async () => {
     setWorkDate(getTodayDateString());
+    setShowDatePicker(false);
     setTitle("");
     setDescription("");
     setExpectedOutcome("");
@@ -79,6 +92,42 @@ export function CreateAssignmentModal({
     }
   }, [visible, loadReportsAndReset]);
 
+  function handleDateSelected(date: Date) {
+    const yyyymmdd = dateToBackendString(date);
+    setWorkDate(yyyymmdd);
+    setShowDatePicker(false);
+  }
+
+  function openDatePicker() {
+    const currentVal = workDate
+      ? backendStringToDate(workDate)
+      : getTodayDateObject();
+
+    if (Platform.OS === "android") {
+      try {
+        DateTimePickerAndroid.open({
+          value: currentVal,
+          mode: "date",
+          onValueChange: (
+            _event: DateTimePickerChangeEvent,
+            selectedDate?: Date,
+          ) => {
+            if (selectedDate) {
+              handleDateSelected(selectedDate);
+            }
+          },
+          onDismiss: () => {
+            setShowDatePicker(false);
+          },
+        });
+      } catch {
+        setShowDatePicker(true);
+      }
+    } else {
+      setShowDatePicker(true);
+    }
+  }
+
   async function handleSubmit() {
     if (!selectedEmployeeId) {
       Alert.alert(
@@ -97,7 +146,7 @@ export function CreateAssignmentModal({
     if (!/^\d{4}-\d{2}-\d{2}$/.test(workDate.trim())) {
       Alert.alert(
         "Invalid Date",
-        "Please enter a valid work date in YYYY-MM-DD format.",
+        "Please select a valid work date.",
       );
       return;
     }
@@ -184,14 +233,26 @@ export function CreateAssignmentModal({
             )}
 
             {/* Work Date */}
-            <Text style={styles.inputLabel}>Work Date (YYYY-MM-DD) *</Text>
-            <TextInput
-              onChangeText={setWorkDate}
-              placeholder="e.g. 2026-09-04"
-              placeholderTextColor={colors.muted}
-              style={styles.input}
-              value={workDate}
-            />
+            <Text style={styles.inputLabel}>Work Date *</Text>
+            <Pressable
+              accessibilityLabel="Select work date"
+              accessibilityRole="button"
+              onPress={openDatePicker}
+              style={({ pressed }) => [
+                styles.datePickerBtn,
+                pressed && styles.datePickerBtnPressed,
+              ]}
+            >
+              <Text
+                style={[
+                  styles.datePickerText,
+                  !workDate && styles.datePickerPlaceholder,
+                ]}
+              >
+                {workDate ? toDisplayDate(workDate) : "DD-MM-YYYY"}
+              </Text>
+              <Text style={styles.calendarIcon}>📅</Text>
+            </Pressable>
 
             {/* Task Title */}
             <Text style={styles.inputLabel}>Task Title *</Text>
@@ -282,6 +343,47 @@ export function CreateAssignmentModal({
           </ScrollView>
         </View>
       </View>
+
+      {/* iOS / Fallback Calendar Picker Modal */}
+      {showDatePicker && Platform.OS !== "android" && (
+        <Modal
+          animationType="fade"
+          onRequestClose={() => setShowDatePicker(false)}
+          transparent
+          visible={Boolean(showDatePicker)}
+        >
+          <View style={styles.iosPickerBackdrop}>
+            <View style={styles.iosPickerSheet}>
+              <View style={styles.iosPickerHeader}>
+                <Text style={styles.iosPickerTitle}>Select Work Date</Text>
+                <Pressable onPress={() => setShowDatePicker(false)}>
+                  <Text style={styles.iosPickerDone}>Done</Text>
+                </Pressable>
+              </View>
+              <DateTimePicker
+                display={Platform.OS === "ios" ? "inline" : "default"}
+                mode="date"
+                onDismiss={() => {
+                  setShowDatePicker(false);
+                }}
+                onValueChange={(
+                  _event: DateTimePickerChangeEvent,
+                  selectedDate?: Date,
+                ) => {
+                  if (selectedDate) {
+                    handleDateSelected(selectedDate);
+                  }
+                }}
+                value={
+                  workDate
+                    ? backendStringToDate(workDate)
+                    : getTodayDateObject()
+                }
+              />
+            </View>
+          </View>
+        </Modal>
+      )}
     </Modal>
   );
 }
@@ -421,6 +523,59 @@ const styles = StyleSheet.create({
   },
   submitBtnText: {
     color: colors.white,
+    fontSize: 16,
+    fontWeight: "700",
+  },
+  datePickerBtn: {
+    alignItems: "center",
+    backgroundColor: colors.white,
+    borderColor: "#D0D5DD",
+    borderRadius: radius.sm,
+    borderWidth: 1,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    minHeight: 44,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 10,
+  },
+  datePickerBtnPressed: {
+    backgroundColor: "#EDF1F7",
+  },
+  datePickerText: {
+    color: colors.ink,
+    fontSize: 14,
+    fontWeight: "500",
+  },
+  datePickerPlaceholder: {
+    color: colors.muted,
+  },
+  calendarIcon: {
+    fontSize: 16,
+  },
+  iosPickerBackdrop: {
+    backgroundColor: "rgba(23,34,53,0.45)",
+    flex: 1,
+    justifyContent: "center",
+    padding: spacing.lg,
+  },
+  iosPickerSheet: {
+    backgroundColor: colors.white,
+    borderRadius: radius.md,
+    padding: spacing.lg,
+  },
+  iosPickerHeader: {
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: spacing.md,
+  },
+  iosPickerTitle: {
+    color: colors.ink,
+    fontSize: 16,
+    fontWeight: "700",
+  },
+  iosPickerDone: {
+    color: colors.primary,
     fontSize: 16,
     fontWeight: "700",
   },

@@ -102,6 +102,64 @@ export default function EmployeeHome() {
         </View>
       </View>
 
+      <View style={employeeStyles.card}>
+        <Text style={employeeStyles.label}>Quick Access</Text>
+        <View style={styles.quickLinks}>
+          <Pressable
+            onPress={() => router.push("/profile")}
+            style={styles.quickLink}
+          >
+            <Text style={styles.quickLinkText}>Profile</Text>
+          </Pressable>
+          {isAdmin && (
+            <>
+              <Pressable
+                onPress={() => router.push("/admin" as any)}
+                style={styles.quickLink}
+              >
+                <Text style={styles.quickLinkText}>Admin</Text>
+              </Pressable>
+              <Pressable
+                onPress={() => router.push("/leave" as any)}
+                style={styles.quickLink}
+              >
+                <Text style={styles.quickLinkText}>HR Leave</Text>
+              </Pressable>
+            </>
+          )}
+          {isManager && (
+            <Pressable
+              onPress={() => router.push("/team" as any)}
+              style={styles.quickLink}
+            >
+              <Text style={styles.quickLinkText}>My Team</Text>
+            </Pressable>
+          )}
+          {isWorkEligible && (
+            <Pressable
+              onPress={() => router.push("/(app)/(tabs)/work" as any)}
+              style={styles.quickLink}
+            >
+              <Text style={styles.quickLinkText}>My Work</Text>
+            </Pressable>
+          )}
+          {isAttendanceEligible && (
+            <Pressable
+              onPress={() => router.push("/attendance" as any)}
+              style={styles.quickLink}
+            >
+              <Text style={styles.quickLinkText}>Attendance</Text>
+            </Pressable>
+          )}
+          <Pressable
+            onPress={() => router.push("/talent")}
+            style={styles.quickLink}
+          >
+            <Text style={styles.quickLinkText}>Talent ID</Text>
+          </Pressable>
+        </View>
+      </View>
+
       {/* Today's Work Quick Access (Only for eligible roles) */}
       {isWorkEligible && (
         <View style={employeeStyles.card}>
@@ -231,64 +289,6 @@ export default function EmployeeHome() {
           </Text>
         </View>
       )}
-
-      <View style={employeeStyles.card}>
-        <Text style={employeeStyles.label}>Quick Access</Text>
-        <View style={styles.quickLinks}>
-          <Pressable
-            onPress={() => router.push("/profile")}
-            style={styles.quickLink}
-          >
-            <Text style={styles.quickLinkText}>Profile</Text>
-          </Pressable>
-          {isAdmin && (
-            <>
-              <Pressable
-                onPress={() => router.push("/admin" as any)}
-                style={styles.quickLink}
-              >
-                <Text style={styles.quickLinkText}>Admin</Text>
-              </Pressable>
-              <Pressable
-                onPress={() => router.push("/leave" as any)}
-                style={styles.quickLink}
-              >
-                <Text style={styles.quickLinkText}>HR Leave</Text>
-              </Pressable>
-            </>
-          )}
-          {isManager && (
-            <Pressable
-              onPress={() => router.push("/team" as any)}
-              style={styles.quickLink}
-            >
-              <Text style={styles.quickLinkText}>My Team</Text>
-            </Pressable>
-          )}
-          {isWorkEligible && (
-            <Pressable
-              onPress={() => router.push("/(app)/(tabs)/work" as any)}
-              style={styles.quickLink}
-            >
-              <Text style={styles.quickLinkText}>My Work</Text>
-            </Pressable>
-          )}
-          {isAttendanceEligible && (
-            <Pressable
-              onPress={() => router.push("/attendance" as any)}
-              style={styles.quickLink}
-            >
-              <Text style={styles.quickLinkText}>Attendance</Text>
-            </Pressable>
-          )}
-          <Pressable
-            onPress={() => router.push("/talent")}
-            style={styles.quickLink}
-          >
-            <Text style={styles.quickLinkText}>Talent ID</Text>
-          </Pressable>
-        </View>
-      </View>
 
       <View style={employeeStyles.card}>
         <Text style={employeeStyles.label}>Professional Identity</Text>
